@@ -1,19 +1,38 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { FiShoppingCart, FiUser, FiMenu, FiX, FiTrash2 } from "react-icons/fi";
+import {
+  FiShoppingCart,
+  FiUser,
+  FiMenu,
+  FiX,
+  FiTrash2,
+} from "react-icons/fi";
 
 export default function Navbar() {
   const [cartOpen, setCartOpen] = useState(false);
-  const [userOpen, setUserOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userOpen, setUserOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [cartItems, setCartItems] = useState([]);
   const [isClient, setIsClient] = useState(false);
+  const [isAuth, setIsAuth] = useState(false); // Change to true if user is logged in
 
-  // Demo products for search suggestions
+  const userRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (userRef.current && !userRef.current.contains(e.target)) {
+        setUserOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  /* ---------------- DEMO DATA ---------------- */
   const products = [
     "Apple iPhone 15",
     "Apple iPad Air",
@@ -29,38 +48,18 @@ export default function Navbar() {
     p.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Demo cart items with images
   const demoCartItems = [
     {
       name: "Apple iPhone 15",
       price: 599,
       qty: 1,
-      image: "https://flowbite.s3.amazonaws.com/blocks/e-commerce/iphone15.png",
+      image: "/images/iphone15.png", // Replaced Flowbite URL with local path
     },
     {
       name: "Apple iPad Air",
       price: 499,
       qty: 1,
-      image: "https://flowbite.s3.amazonaws.com/blocks/e-commerce/ipad-air.png",
-    },
-    {
-      name: "Apple Watch SE",
-      price: 598,
-      qty: 2,
-      image:
-        "https://flowbite.s3.amazonaws.com/blocks/e-commerce/apple-watch.png",
-    },
-    {
-      name: "Sony Playstation 5",
-      price: 799,
-      qty: 1,
-      image: "https://flowbite.s3.amazonaws.com/blocks/e-commerce/ps5.png",
-    },
-    {
-      name: 'Apple iMac 24"',
-      price: 8997,
-      qty: 3,
-      image: "https://flowbite.s3.amazonaws.com/blocks/e-commerce/imac.png",
+      image: "/images/ipad-air.png", // Replaced Flowbite URL with local path
     },
   ];
 
@@ -85,23 +84,21 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="bg-white dark:bg-gray-800 shadow-sm">
-        <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16 items-center">
-            {/* Logo */}
-            <div className="flex-shrink-0">
-              <Link href="/" className="cursor-pointer">
+      <nav className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-30">
+        <div className="max-w-screen-xl mx-auto px-4">
+          <div className="flex items-center justify-between h-16">
+            {/* Left: Hamburger + Logo */}
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setMobileMenuOpen(true)}
+                className="lg:hidden p-2 text-xl"
+              >
+                <FiMenu />
+              </button>
+
+              <Link href="/" className="hidden md:block">
                 <Image
-                  className="h-8 w-auto dark:hidden"
-                  src="https://flowbite.s3.amazonaws.com/blocks/e-commerce/logo-full.svg"
-                  alt="Logo"
-                  width={120}
-                  height={32}
-                  unoptimized
-                />
-                <Image
-                  className="h-8 w-auto hidden dark:block"
-                  src="https://flowbite.s3.amazonaws.com/blocks/e-commerce/logo-full-dark.svg"
+                  src="/images/logo.png" // Replaced Flowbite logo with local path
                   alt="Logo"
                   width={120}
                   height={32}
@@ -110,37 +107,23 @@ export default function Navbar() {
               </Link>
             </div>
 
-            {/* Desktop Menu */}
-            <div className="hidden lg:flex lg:items-center lg:space-x-6 flex-1">
-              <ul className="flex space-x-6">
-                {menuItems.map((item) => (
-                  <li key={item}>
-                    <Link
-                      href="#"
-                      className="text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 text-sm font-medium transition-colors cursor-pointer"
-                    >
-                      {item}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-
-              {/* Desktop Search */}
-              <div className="ml-6 flex-1 relative max-w-md">
+            {/* Center: Search Bar - Always Visible */}
+            <div className="flex-1 max-w-md mx-1 md:mx-4">
+              <div className="relative">
                 <input
                   type="text"
-                  placeholder="Search products..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-text"
+                  placeholder="Search products..."
+                  className="w-full rounded-lg border border-gray-300 px-2 md:px-4 py-2 text-xs md:text-sm focus:outline-none focus:border-blue-500 transition" // Increased padding and text size on mobile
                 />
                 {searchQuery && suggestions.length > 0 && (
-                  <ul className="absolute z-10 w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 mt-1 rounded-lg shadow-lg max-h-60 overflow-auto">
-                    {suggestions.map((item, index) => (
+                  <ul className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+                    {suggestions.map((item, i) => (
                       <li
-                        key={index}
-                        className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-sm"
+                        key={i}
                         onClick={() => setSearchQuery(item)}
+                        className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm"
                       >
                         {item}
                       </li>
@@ -150,224 +133,203 @@ export default function Navbar() {
               </div>
             </div>
 
-            {/* Right Actions */}
-            <div className="flex items-center space-x-4">
-              {/* Cart Button */}
+            {/* Right: Cart + User - Visible on all devices */}
+            <div className="flex items-center gap-1 md:gap-3">
               <button
-                onClick={() => setCartOpen(!cartOpen)}
-                className="relative p-2 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors cursor-pointer"
+                onClick={() => setCartOpen(true)}
+                className="relative p-1 md:p-2 rounded-lg hover:bg-gray-100 transition"
               >
-                <FiShoppingCart className="h-6 w-6" />
+                <FiShoppingCart className="h-5 md:h-6 w-5 md:w-6" />
                 {isClient && cartCount > 0 && (
-                  <span
-                    suppressHydrationWarning
-                    className="absolute -top-1 -right-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold text-white bg-red-600 rounded-full"
-                  >
+                  <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs px-1.5 py-0.5 rounded-full">
                     {cartCount}
                   </span>
                 )}
               </button>
 
-              {/* User Menu */}
-              <div className="relative hidden sm:block">
-                <button
-                  onClick={() => setUserOpen(!userOpen)}
-                  className="p-2 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors cursor-pointer"
-                >
-                  <FiUser className="h-5 w-5" />
-                </button>
-                {userOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 z-50">
-                    <ul className="py-2 text-sm">
-                      {[
-                        "My Account",
-                        "My Orders",
-                        "Settings",
-                        "Favourites",
-                        "Delivery Addresses",
-                        "Billing Data",
-                      ].map((item) => (
-                        <li key={item}>
+              <div className="relative" ref={userRef}>
+                {isAuth ? (
+                  <>
+                    <button
+                      onClick={() => setUserOpen(!userOpen)}
+                      className="p-1 md:p-2 rounded-lg hover:bg-gray-100 transition flex items-center gap-1 md:gap-2"
+                    >
+                      <FiUser className="h-5 md:h-5 w-5 md:w-5" />
+                      <span className="hidden sm:inline text-xs md:text-sm font-medium">Account</span>
+                    </button>
+
+                    {userOpen && (
+                      <div className="absolute right-0 mt-2 z-20 w-56 bg-white rounded-lg shadow-lg divide-y divide-gray-100">
+                        <ul className="p-2 text-sm">
+                          {[
+                            "My Account",
+                            "My Orders",
+                            "Settings",
+                            "Favourites",
+                            "Delivery Addresses",
+                            "Billing Data",
+                          ].map((item) => (
+                            <li key={item}>
+                              <Link
+                                href="#"
+                                className="block px-3 py-2 rounded-md hover:bg-gray-100"
+                              >
+                                {item}
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                        <div className="p-2">
                           <Link
-                            href="#"
-                            className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer"
+                            href="/logout"
+                            className="block px-3 py-2 text-red-600 rounded-md hover:bg-gray-100"
                           >
-                            {item}
+                            Sign Out
                           </Link>
-                        </li>
-                      ))}
-                    </ul>
-                    <div className="border-t border-gray-200 dark:border-gray-600">
-                      <Link
-                        href="#"
-                        className="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer"
-                      >
-                        Sign Out
-                      </Link>
-                    </div>
-                  </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <Link
+                    href="/login"
+                    className="p-1 md:p-2 rounded-lg hover:bg-gray-100 transition flex items-center gap-1 md:gap-2"
+                  >
+                    <FiUser className="h-5 md:h-5 w-5 md:w-5" />
+                    <span className="hidden sm:inline text-xs md:text-sm font-medium">Sign In</span>
+                  </Link>
                 )}
               </div>
-
-              {/* Mobile Menu Button */}
-              <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="lg:hidden p-2 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
-              >
-                {mobileMenuOpen ? (
-                  <FiX className="h-6 w-6" />
-                ) : (
-                  <FiMenu className="h-6 w-6" />
-                )}
-              </button>
             </div>
           </div>
 
-          {/* Mobile Menu */}
-          {mobileMenuOpen && (
-            <div className="lg:hidden mt-4 pb-4 space-y-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search products..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-text"
-                />
-                {searchQuery && suggestions.length > 0 && (
-                  <ul className="absolute z-10 w-full bg-white dark:bg-gray-800 border mt-1 rounded-lg shadow-lg max-h-60 overflow-auto">
-                    {suggestions.map((item, index) => (
-                      <li
-                        key={index}
-                        onClick={() => setSearchQuery(item)}
-                        className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-sm"
-                      >
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-              <ul className="space-y-3">
-                {menuItems.map((item) => (
-                  <li key={item}>
-                    <Link
-                      href="#"
-                      className="block text-gray-900 dark:text-white hover:text-blue-600 text-base font-medium cursor-pointer"
-                    >
-                      {item}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+          {/* Desktop Menu Links */}
+          <div className="hidden lg:block border-t">
+            <ul className="flex justify-center space-x-8 py-3">
+              {menuItems.map((item) => (
+                <li key={item}>
+                  <Link
+                    href="#"
+                    className="text-sm font-medium text-gray-700 hover:text-blue-600 transition"
+                  >
+                    {item}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       </nav>
 
-      {/* Cart Drawer with Blur Backdrop & Smooth Animation */}
-      {isClient && (
-        <>
-          {/* Blur Backdrop */}
-          <div
-            className={`fixed inset-0 bg-white/30 dark:bg-black/30 backdrop-blur-sm z-40 transition-all duration-300 ease-in-out ${
-              cartOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-            }`}
-            onClick={() => setCartOpen(false)}
-          />
+      {/* Mobile Menu Drawer - Smooth Slide from Left */}
+      <div
+        className={`fixed inset-0 z-50 pointer-events-none ${
+          mobileMenuOpen ? "visible" : "invisible"
+        }`}
+      >
+        {/* Backdrop */}
+        <div
+          onClick={() => setMobileMenuOpen(false)}
+          className={`absolute inset-0 bg-black transition-opacity duration-300 ${
+            mobileMenuOpen ? "opacity-40 pointer-events-auto" : "opacity-0"
+          }`}
+        />
 
-          {/* Drawer */}
-          <div
-            className={`fixed inset-y-0 right-0 z-50 w-full max-w-md bg-white dark:bg-gray-800 shadow-xl flex flex-col transition-transform duration-300 ease-in-out ${
-              cartOpen ? "translate-x-0" : "translate-x-full"
-            }`}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Shopping Cart ({cartCount})
-              </h2>
-              <button
-                onClick={() => setCartOpen(false)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors cursor-pointer"
-              >
-                <FiX className="h-6 w-6" />
-              </button>
-            </div>
-
-            {/* Body */}
-            <div className="flex-1 overflow-y-auto p-4">
-              {cartItems.length === 0 ? (
-                <p className="text-center py-16 text-gray-500">
-                  Your cart is empty.
-                </p>
-              ) : (
-                <div className="space-y-6">
-                  {cartItems.map((item, index) => (
-                    <div
-                      key={index}
-                      className="flex gap-4 bg-gray-50 dark:bg-gray-900 p-4 rounded-lg"
-                    >
-                      <div className="flex-shrink-0">
-                        <Image
-                          src={item.image || "/placeholder.svg"}
-                          alt={item.name}
-                          width={96}
-                          height={96}
-                          className="w-24 h-24 object-cover rounded-md"
-                          unoptimized
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <Link
-                          href="#"
-                          className="font-medium text-gray-900 dark:text-white hover:underline line-clamp-2 cursor-pointer"
-                        >
-                          {item.name}
-                        </Link>
-                        <p className="text-sm text-gray-500 mt-1">
-                          ${item.price.toLocaleString()} × {item.qty}
-                        </p>
-                        <p className="text-lg font-semibold mt-2">
-                          ${(item.price * item.qty).toLocaleString()}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => removeItem(index)}
-                        className="text-red-600 hover:text-red-800 self-start cursor-pointer"
-                      >
-                        <FiTrash2 className="h-5 w-5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Footer */}
-            {cartItems.length > 0 && (
-              <div className="border-t border-gray-200 dark:border-gray-700 p-4 space-y-4">
-                <div className="flex justify-between text-xl font-bold">
-                  <span>Total</span>
-                  <span>
-                    $
-                    {cartItems
-                      .reduce((sum, item) => sum + item.price * item.qty, 0)
-                      .toLocaleString()}
-                  </span>
-                </div>
+        {/* Drawer Panel */}
+        <div
+          className={`absolute left-0 top-0 h-full w-72 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out ${
+            mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
+        >
+          <div className="p-4 border-b flex justify-between items-center">
+            <h2 className="font-semibold text-lg">Menu</h2>
+            <button onClick={() => setMobileMenuOpen(false)}>
+              <FiX className="text-2xl" />
+            </button>
+          </div>
+          <ul className="p-4 space-y-1">
+            {menuItems.map((item) => (
+              <li key={item}>
                 <Link
-                  href="/cart"
-                  className="block text-center w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg transition-colors cursor-pointer"
-                  onClick={() => setCartOpen(false)}
+                  href="#"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-4 py-3 text-base font-medium text-gray-800 hover:bg-gray-100 rounded-lg transition"
                 >
-                  View Cart
+                  {item}
                 </Link>
-              </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      {/* Cart Drawer - Smooth Slide from Right */}
+      <div
+        className={`fixed inset-0 z-50 pointer-events-none ${
+          cartOpen ? "visible" : "invisible"
+        }`}
+      >
+        {/* Backdrop */}
+        <div
+          onClick={() => setCartOpen(false)}
+          className={`absolute inset-0 bg-black transition-opacity duration-300 ${
+            cartOpen ? "opacity-40 pointer-events-auto" : "opacity-0"
+          }`}
+        />
+
+        {/* Drawer Panel */}
+        <div
+          className={`absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl transform transition-transform duration-300 ease-in-out ${
+            cartOpen ? "translate-x-0" : "translate-x-full"
+          } flex flex-col`}
+        >
+          <div className="p-4 border-b flex justify-between items-center">
+            <h2 className="font-semibold text-lg">Shopping Cart ({cartCount})</h2>
+            <button onClick={() => setCartOpen(false)}>
+              <FiX className="text-2xl" />
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 space-y-6">
+            {cartItems.length === 0 ? (
+              <p className="text-center text-gray-500 mt-10">Your cart is empty</p>
+            ) : (
+              cartItems.map((item, i) => (
+                <div key={i} className="flex gap-4 bg-gray-50 p-4 rounded-lg">
+                  <Image
+                    src={item.image}
+                    width={80}
+                    height={80}
+                    alt={item.name}
+                    className="rounded object-cover"
+                    unoptimized
+                  />
+                  <div className="flex-1">
+                    <p className="font-medium">{item.name}</p>
+                    <p className="text-gray-600 mt-1">
+                      ${item.price} × {item.qty}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => removeItem(i)}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    <FiTrash2 className="text-xl" />
+                  </button>
+                </div>
+              ))
             )}
           </div>
-        </>
-      )}
+
+          {cartItems.length > 0 && (
+            <div className="p-4 border-t bg-white">
+              <button className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition">
+                Proceed to Checkout
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
     </>
   );
 }
