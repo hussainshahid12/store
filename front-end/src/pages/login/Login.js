@@ -1,14 +1,32 @@
 "use client";
-
 import Image from "next/image";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { HiEye, HiEyeOff } from "react-icons/hi";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchLoginUser } from "../../../lib/features/user/user";
+import toast, { Toaster } from "react-hot-toast";
+import Loader from "@/components/loader/Loader";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
+  const dispatch = useDispatch();
+  const router=useRouter()
+  const state = useSelector((state) => state.user?.userInfo);
+  const error = useSelector((state) => state.user?.error);
+  const loading = useSelector((state) => state.user?.isLoading);
+  console.log("loading", loading);
   const [showPassword, setShowPassword] = useState(false);
 
+  useEffect(() => {
+    if (state?.status) {
+      toast.success(state?.message);
+      router.push("/")
+
+    }
+    if (error) toast.error(error);
+  }, [state, error]);
   const {
     register,
     handleSubmit,
@@ -16,27 +34,13 @@ export default function LoginPage() {
   } = useForm();
 
   const onSubmit = (data) => {
-    console.log("Form Data:", data);
+    let save = dispatch(fetchLoginUser(data));
   };
 
   return (
-    <section className="bg-gray-50 dark:bg-gray-900 min-h-screen">
-      <div className="flex flex-col items-center justify-center px-6 py-8 mx-auto min-h-screen">
-        {/* Logo */}
-        <Link
-          href="/"
-          className="flex items-center mb-6 text-2xl font-semibold text-gray-900 dark:text-white cursor-pointer"
-        >
-          <Image
-            src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/logo.svg"
-            alt="logo"
-            width={32}
-            height={32}
-            className="mr-2"
-          />
-          Flowbite
-        </Link>
-
+    <section className="bg-gray-50 dark:bg-gray-900 fixed inset-0 overflow-hidden">
+      {loading && <Loader />}
+      <div className="flex flex-col items-center justify-center px-6 py-0 mx-auto h-full">
         {/* Card */}
         <div className="w-full bg-white rounded-lg shadow sm:max-w-md xl:p-0 dark:bg-gray-800">
           <div className="p-6 space-y-6 sm:p-8">
@@ -183,6 +187,15 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          style: {
+            borderRadius: "8px",
+            fontSize: "14px",
+          },
+        }}
+      />
     </section>
   );
 }
