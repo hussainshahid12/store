@@ -9,7 +9,7 @@ export const fetchGetProducts = createAsyncThunk(
   "product/fetchGetProducts",
   async ({ currentPage, order }, { rejectWithValue }) => {
     try {
-    return await getProductsService(currentPage, order);
+      return await getProductsService(currentPage, order);
     } catch (err) {
       // axios error handling
       return rejectWithValue(err.response?.data?.message || err.message);
@@ -69,7 +69,7 @@ const productSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(fetchGetProducts.pending, (state, action) => {
-        state.items=nullur
+        state.items = null;
         state.isLoading = true;
         state.error = null;
       })
