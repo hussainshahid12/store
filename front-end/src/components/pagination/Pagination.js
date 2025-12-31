@@ -86,7 +86,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
             onClick={handleLoadMore}
             className="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition shadow-md"
           >
-            Load More
+            Load More Products
           </button>
         ) : (
           <p className="text-gray-500 dark:text-gray-400 text-sm">
