@@ -17,10 +17,10 @@ class product {
     try {
       let pageNo = req.query.page || 1;
       let pageSize = 30;
-      let sort = req.query.sort
+      let sort = req.query.sort;
       let order = req.query.order;
-      let query = Product.find({ });
-      console.log(req.query)
+      let query = Product.find({});
+      console.log(req.query);
 
       if (sort && order) {
         query = await query
@@ -36,14 +36,23 @@ class product {
   }
   static async getTotalProducts(req, res) {
     try {
+      const isValid = req.query.countCategory === "true";
+      const category = req.query.category?.split(",");
+      console.log(req.query);
       let pageSize = 30;
-      let countProducts = await Product.find().countDocuments();
+      let query = isValid
+        ? Product.find({ category: { $in: category } })
+        : Product.find();
+      let countProducts = await query.countDocuments();
+      console.log(countProducts)
       let totalPages = Math.ceil(countProducts / pageSize);
+           console.log("pages", totalPages)
 
       if (countProducts) {
         res.status(200).json({
           count: countProducts,
           pages: totalPages,
+          status: true,
           message: "product count successfully",
         });
         return;
@@ -52,7 +61,34 @@ class product {
         message: "product not found",
       });
     } catch (err) {
-      customErrorHandler({ status: 404, message: err.message }, req, res);
+      customErrorHandler(
+        { status: 404, message: err.message, status: false },
+        req,
+        res
+      );
+    }
+  }
+
+  static async getFilterCategory(req, res) {
+    try {
+      const category = req.query.category.split(",");
+      let pageSize = 30;
+      let pageNo = req.query.page || 1;
+      console.log(req.query);
+      let query = await Product.find({ category: { $in: category } })
+        .skip(pageSize * (pageNo - 1))
+        .limit(pageSize);
+      res.json({
+        query,
+        message: "Get all filter category successfully",
+        status: true,
+      });
+    } catch (err) {
+      customErrorHandler(
+        { status: 404, message: err.message, status: false },
+        req,
+        res
+      );
     }
   }
 }

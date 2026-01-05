@@ -11,7 +11,7 @@ const corsOtions = {
   // origin:true, for teting both pc or mobile
   origin: [
     "http://localhost:3000",
-    "http://192.168.0.106:3000" // mobile testing 
+    "http://192.168.0.102:3000" // mobile testing 
   ],
   
   credentials: true,
