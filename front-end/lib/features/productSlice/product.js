@@ -3,6 +3,7 @@ import {
   getProductsService,
   getProductCountService,
   getALLCategoryService,
+  getFilterCategoryService,
 } from "@/services/productService";
 
 export const fetchGetProducts = createAsyncThunk(
@@ -19,9 +20,9 @@ export const fetchGetProducts = createAsyncThunk(
 
 export const fetchProductCount = createAsyncThunk(
   "product/fetchProductCount",
-  async (pageNo, { rejectWithValue }) => {
+  async ({ count, category }, { rejectWithValue }) => {
     try {
-      let res = await getProductCountService();
+      let res = await getProductCountService(count, category);
       return res;
     } catch (err) {
       // axios error handling
@@ -35,6 +36,19 @@ export const fetchALLCategory = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       let res = await getALLCategoryService();
+      return res;
+    } catch (err) {
+      // axios error handling
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  }
+);
+
+export const fetchFilterCategory = createAsyncThunk(
+  "product/fetchFilterCategory",
+  async ({ page, category }, { rejectWithValue }) => {
+    try {
+      let res = await getFilterCategoryService(page, category);
       return res;
     } catch (err) {
       // axios error handling
@@ -82,6 +96,7 @@ const productSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload;
       })
+
       .addCase(fetchProductCount.pending, (state, action) => {
         state.isLoading = true;
         state.error = null;
@@ -95,6 +110,7 @@ const productSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload;
       })
+
       .addCase(fetchALLCategory.pending, (state, action) => {
         state.isLoading = true;
         state.error = null;
@@ -105,6 +121,21 @@ const productSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchALLCategory.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+      })
+
+      .addCase(fetchFilterCategory.pending, (state, action) => {
+        state.items = null;
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchFilterCategory.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.items = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchFilterCategory.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
       });

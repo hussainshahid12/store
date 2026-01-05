@@ -6,10 +6,13 @@ import Pagination from "../pagination/Pagination";
 import {
   fetchGetProducts,
   fetchProductCount,
+  fetchFilterCategory,
 } from "../../../lib/features/productSlice/product";
 import { useDispatch, useSelector } from "react-redux";
 import SkeletonLoader from "../skeletonLoader/SkeletonLoader";
 import toast, { Toaster } from "react-hot-toast";
+
+let DB_categoty = [];
 
 const ProductCard = ({ product }) => (
   <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 group">
@@ -60,6 +63,7 @@ export default function ProductListing() {
   const dispatch = useDispatch();
 
   const stateProducts = useSelector((state) => state.product.items?.query);
+
   const categoryState = useSelector(
     (state) => state.product.category?.response
   );
@@ -85,13 +89,21 @@ export default function ProductListing() {
     const page = Number(params.get("page") || 1);
     const sort = params.get("sort");
     const order = params.get("order");
+    const category = params.get("category");
 
     setCurrentPage(page);
+    if (category) {
+      const categoryfilter = DB_categoty.join(",");
+      dispatch(fetchFilterCategory({ page, category: categoryfilter }));
+      dispatch(fetchProductCount({ count: "true", category: categoryfilter }));
+      return;
+    }
 
     if (sort && order) {
       dispatch(fetchGetProducts({ currentPage: page, order }));
     } else {
       dispatch(fetchGetProducts({ currentPage: page }));
+      if (!category) dispatch(fetchProductCount({}));
     }
   };
 
@@ -146,13 +158,29 @@ export default function ProductListing() {
   };
 
   // Category filter change → reset
-  const handleCategoryChange = (category) => {
-    setCurrentPage(1);
-    setAccumulatedProducts([]);
+  const handleCategoryChange = (e) => {
+    const value = e.target.value;
+    const checked = e.target.checked;
 
-    const url = new URL(window.location);
-    url.searchParams.set("page", "1");
-    window.history.pushState({}, "", url.toString());
+    if (checked) {
+      if (!DB_categoty.includes(value)) {
+        DB_categoty.push(value);
+      }
+    } else {
+      DB_categoty = DB_categoty.filter((item) => item !== value);
+    }
+
+    // ✅ Create EMPTY params
+    const params = new URLSearchParams(window.location.search);
+
+    if (DB_categoty.length > 0) {
+      params.set("category", DB_categoty.join(","));
+    } else {
+      params.delete("category"); // ✅ now works
+    }
+
+    const url = `?${params.toString()}`;
+    window.history.pushState({}, "", url);
     loadProductsFromUrl();
   };
 
@@ -164,9 +192,9 @@ export default function ProductListing() {
   }, [dispatch]);
 
   // Fetch total count
-  useEffect(() => {
-    dispatch(fetchProductCount());
-  }, [dispatch]);
+  // useEffect(() => {
+  //   dispatch(fetchProductCount({}));
+  // }, []);
 
   // Error toast
   useEffect(() => {
@@ -204,7 +232,8 @@ export default function ProductListing() {
                     <input
                       type="checkbox"
                       className="form-checkbox h-4 w-4 text-blue-600 rounded"
-                      onChange={() => handleCategoryChange(cat._id)}
+                      value={cat._id}
+                      onChange={handleCategoryChange}
                     />
                     <span className="text-gray-700 dark:text-gray-300">
                       {cat._id.charAt(0).toUpperCase() + cat._id.slice(1)}
