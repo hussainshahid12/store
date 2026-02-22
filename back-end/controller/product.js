@@ -1,10 +1,10 @@
 import customErrorHandler from "../errorHanlding/error.js";
-import Product from "../model/product.js";
+import product from "../model/product.js";
 
-class product {
+class Product {
   static async getALLCategory(req, res) {
     try {
-      let response = await Product.aggregate([
+      let response = await product.aggregate([
         { $group: { _id: "$category", images: { $first: "$thumbnail" } } },
       ]);
       res.json({ response, message: "Get all category successfully" });
@@ -19,17 +19,17 @@ class product {
       let pageSize = 30;
       let sort = req.query.sort;
       let order = req.query.order;
-      let query = Product.find({});
-      console.log(req.query);
+      let query = product.find({});
+      let result = null;
 
       if (sort && order) {
-        query = await query
+        result = await query
           .sort({ price: order })
           .skip(pageSize * (pageNo - 1))
           .limit(pageSize);
-      } else query = await query.skip(pageSize * (pageNo - 1)).limit(pageSize);
+      } else result = await query.skip(pageSize * (pageNo - 1)).limit(pageSize);
 
-      res.json({ query, message: "Get products successfully" });
+      res.json({ result, message: "Get products successfully", status: true });
     } catch (err) {
       customErrorHandler({ status: 400, message: err.message }, req, res);
     }
@@ -41,12 +41,12 @@ class product {
       console.log(req.query);
       let pageSize = 30;
       let query = isValid
-        ? Product.find({ category: { $in: category } })
-        : Product.find();
+        ? product.find({ category: { $in: category } })
+        : product.find();
       let countProducts = await query.countDocuments();
-      console.log(countProducts)
+      console.log(countProducts);
       let totalPages = Math.ceil(countProducts / pageSize);
-           console.log("pages", totalPages)
+      console.log("pages", totalPages);
 
       if (countProducts) {
         res.status(200).json({
@@ -61,11 +61,7 @@ class product {
         message: "product not found",
       });
     } catch (err) {
-      customErrorHandler(
-        { status: 404, message: err.message, status: false },
-        req,
-        res
-      );
+      customErrorHandler({ status: 404, message: err.message }, req, res);
     }
   }
 
@@ -73,24 +69,43 @@ class product {
     try {
       const category = req.query.category.split(",");
       let pageSize = 30;
+      let sort = req.query.sort;
+      let order = req.query.order;
       let pageNo = req.query.page || 1;
+      let result = null;
       console.log(req.query);
-      let query = await Product.find({ category: { $in: category } })
-        .skip(pageSize * (pageNo - 1))
-        .limit(pageSize);
+      let query = product.find({ category: { $in: category } });
+
+      if (sort && order) {
+        result = await query
+          .sort({ price: order })
+          .skip(pageSize * (pageNo - 1))
+          .limit(pageSize);
+      } else result = await query.skip(pageSize * (pageNo - 1)).limit(pageSize);
+
       res.json({
-        query,
+        result,
         message: "Get all filter category successfully",
         status: true,
       });
     } catch (err) {
-      customErrorHandler(
-        { status: 404, message: err.message, status: false },
-        req,
-        res
-      );
+      customErrorHandler({ status: 404, message: err.message }, req, res);
+    }
+  }
+
+  static async getProductDetail(req, res) {
+    try {
+      let id = req.params.id;
+      let result = await product.findById(id);
+      res.json({
+        result,
+        message: "Get product detail successfully",
+        status: true,
+      });
+    } catch (err) {
+      customErrorHandler({ status: 404, message: err.message }, req, res);
     }
   }
 }
 
-export { product };
+export default Product;
