@@ -4,6 +4,7 @@ import {
   getProductCountService,
   getALLCategoryService,
   getFilterCategoryService,
+  getProductDetailService,
 } from "@/services/productService";
 
 export const fetchGetProducts = createAsyncThunk(
@@ -15,7 +16,7 @@ export const fetchGetProducts = createAsyncThunk(
       // axios error handling
       return rejectWithValue(err.response?.data?.message || err.message);
     }
-  }
+  },
 );
 
 export const fetchProductCount = createAsyncThunk(
@@ -28,7 +29,7 @@ export const fetchProductCount = createAsyncThunk(
       // axios error handling
       return rejectWithValue(err.response?.data?.message || err.message);
     }
-  }
+  },
 );
 
 export const fetchALLCategory = createAsyncThunk(
@@ -41,20 +42,33 @@ export const fetchALLCategory = createAsyncThunk(
       // axios error handling
       return rejectWithValue(err.response?.data?.message || err.message);
     }
-  }
+  },
 );
 
 export const fetchFilterCategory = createAsyncThunk(
   "product/fetchFilterCategory",
-  async ({ page, category }, { rejectWithValue }) => {
+  async ({ page, category, sort, order }, { rejectWithValue }) => {
     try {
-      let res = await getFilterCategoryService(page, category);
+      let res = await getFilterCategoryService(page, category, sort, order);
       return res;
     } catch (err) {
       // axios error handling
       return rejectWithValue(err.response?.data?.message || err.message);
     }
-  }
+  },
+);
+
+export const fetchProductDetail = createAsyncThunk(
+  "product/fetchProductDetail",
+  async (id, { rejectWithValue }) => {
+    try {
+      let res = await getProductDetailService(id);
+      return res;
+    } catch (err) {
+      // axios error handling
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  },
 );
 
 const initialState = {
@@ -136,6 +150,20 @@ const productSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchFilterCategory.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+      })
+      .addCase(fetchProductDetail.pending, (state, action) => {
+        state.items = null;
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchProductDetail.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.items = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchProductDetail.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
       });

@@ -116,7 +116,7 @@ const ProductCategories = () => {
 
   return (
     <section className="max-w-screen-xl mx-auto px-4 lg:px-20 py-12 bg-gray-50 dark:bg-gray-900">
-      <h2 className="text-2xl md:text-3xl font-semibold text-gray-900 dark:text-white mb-3 text-center">
+      <h2 className="text-primary text-2xl md:text-3xl font-semibold text-gray-900 dark:text-white mb-3 text-center">
         Product Categories
       </h2>
       <p className="text-center">

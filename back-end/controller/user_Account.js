@@ -11,29 +11,56 @@ class UserAccount {
   static async signup(req, res) {
     try {
       const { fullName, email, mobileNumber, password } = req.body;
-      if ((!fullName, !email, !mobileNumber, !password)) {
-        customErrorHandler(
+
+      // Correct validation
+      if (!fullName || !email || !mobileNumber || !password) {
+        return customErrorHandler(
           { statusCode: 400, message: "All fields are required" },
           req,
-          res
+          res,
         );
-        return;
       }
+
+      // Check existing user (recommended)
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        return res.status(400).json({
+          message: "User already exists",
+        });
+      }
+
       const user = new User(req.body);
 
       const saltRounds = Number(process.env.saltRounds);
       const hash = await bcrypt.hash(password, saltRounds);
       user.password = hash;
+
       await user.save();
 
       const otp = generateOtp();
-      const newOtp = new Otp({ userId: user._id, otp: otp });
+      console.log("Generated OTP:", otp);
+
+      const newOtp = new Otp({
+        userId: user._id,
+        otp,
+      });
+
       await newOtp.save();
 
-      //Otp send mail
-      await sendOtpEmail(email, otp);
+      // Send OTP email
+      const result = await sendOtpEmail(user.email, otp);
 
-      res.status(201).json({ message: "OTP sent to your email", user });
+      if (!result.success) {
+        return res.status(500).json({
+          message: "OTP email failed",
+        });
+      }
+
+      res.status(201).json({
+        message: "Signup successful. OTP sent to email.",
+        userId: user._id,
+        email,
+      });
     } catch (err) {
       customErrorHandler({ statusCode: 500, message: err.message }, req, res);
     }
@@ -66,16 +93,27 @@ class UserAccount {
       return res.status(200).json({
         message: "Login successfully",
         token,
-        status:existUser.isVerified
+        isVerified: existUser.isVerified,
       });
     } catch (err) {
       return customErrorHandler(
         { statusCode: 400, message: err.message },
         req,
-        res
+        res,
       );
     }
   }
+
+  static async logout(req, res) {
+    res.clearCookie("JWT_Token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+    });
+    res.status(200).json({
+      msg: "Account Logout Successfully",
+    });
+  }
 }
 
-export { UserAccount };
+export default UserAccount;
