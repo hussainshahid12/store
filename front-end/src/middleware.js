@@ -9,13 +9,10 @@ export function middleware(request) {
     "/forgot-password",
     "/verify_otp",
     "/resend_otp",
+    "/cart",
   ];
 
-
-  const isAuth =request.cookies.get("JWT_Token");
-  console.log(isAuth)
-
-  console.log("PATH:", path, "AUTH:", isAuth);
+  const isAuth = request.cookies.get("JWT_Token");
 
   // If logged in and trying to access public page → redirect home
   if (isAuth && publicRoutes.includes(path)) {
@@ -33,9 +30,7 @@ export function middleware(request) {
 export const config = {
   //   matcher: ["/((?!_next|api|favicon.ico).*)"],   middleWare function all reoutes this method
   matcher: [
-    "/",
-    "/cart",
-    "/product/:path*",
+    // "/product/:path*",
     "/login",
     "/signUp",
     "/category/:path*",

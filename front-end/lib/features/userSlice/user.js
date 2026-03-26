@@ -58,10 +58,11 @@ export const fetchUserLogout = createAsyncThunk(
   },
 );
 const initialState = {
-  userInfo: null,
+  userInfo: {},       // empty object instead of null
   error: null,
   isLoading: false,
 };
+
 
 const userSlice = createSlice({
   name: "user",

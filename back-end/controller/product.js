@@ -106,6 +106,51 @@ class Product {
       customErrorHandler({ status: 404, message: err.message }, req, res);
     }
   }
+
+  static searchProducts = async (req, res) => {
+    const normalizeWord = (word) => {
+      if (word.endsWith("s")) {
+        return [word, word.slice(0, -1)];
+      }
+      return [word, word + "s"];
+    };
+
+    const escapeRegex = (text) => {
+      return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    };
+
+    try {
+      const query = req.query.q;
+      if (!query) return res.json([]);
+
+      const words = query.trim().toLowerCase().split(/\s+/);
+
+      const conditions = words.map((word) => {
+        const safeWord = escapeRegex(word);
+        const variations = normalizeWord(safeWord);
+
+        return {
+          $or: variations.flatMap((v) => [
+            { title: { $regex: v, $options: "i" } },
+            { brand: { $regex: v, $options: "i" } },
+            { category: { $regex: v, $options: "i" } },
+          ]),
+        };
+      });
+
+      const products = await product
+        .find({
+          $and: conditions,
+        })
+        .select("title thumbnail brand category")
+        .limit(10);
+
+      res.json(products);
+    } catch (error) {
+      console.error(error); // 👈 VERY IMPORTANT
+      res.status(500).json({ message: error.message });
+    }
+  };
 }
 
 export default Product;

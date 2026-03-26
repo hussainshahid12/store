@@ -43,3 +43,16 @@ export const getProductDetailService = async (id) => {
   const response = await api.get(url);
   return response.data;
 };
+
+export const getSearchproductService = async (query) => {
+  let url = `/product/search/?q=${query}`;
+  const response = await api.get(url);
+  return response.data;
+};
+
+
+
+
+
+
+

@@ -110,6 +110,7 @@ class UserAccount {
       secure: process.env.NODE_ENV === "production",
       path: "/",
     });
+
     res.status(200).json({
       msg: "Account Logout Successfully",
     });

@@ -5,8 +5,11 @@
   --foreground: #171717;
 
   /* Primary & Secondary */
-  --primary: #ff6600; /* orange */
-  --pHover:#e65c00;
+
+
+  /* #ff6600 */
+  --primary:   #f67202; /* orange */
+  --pHover:black;
   --secondary: #2563eb; /* blue */
 }
 
