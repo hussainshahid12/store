@@ -10,21 +10,27 @@ import cart_router from "./routes/userCart.js";
 import order_router from "./routes/order.js";
 
 // ✅ CORS config — allows both laptop (localhost) and mobile (LAN IP)
-const corsOptions = {
-  origin: (origin, callback) => {
-    const allowed = [
-      "http://localhost:3000",
-      "http://192.168.0.105:3000", // your mobile/LAN device
-    ];
+// const corsOptions = {
+//   origin: (origin, callback) => {
+//     const allowed = [
+//       process.env.FRONTEND_URL,
+//       process.env.FRONTEND_URL_PROD,
+//       "http://192.168.0.105:3000", // your mobile/LAN device
+//     ];
 
-    // Allow requests with no origin (Postman, curl, etc.)
-    if (!origin || allowed.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error(`CORS blocked: ${origin}`));
-    }
-  },
-  credentials: true, // ✅ Required for cookies (sessionId, JWT_Token)
+//     // Allow requests with no origin (Postman, curl, etc.)
+//     if (!origin || allowed.includes(origin)) {
+//       callback(null, true);
+//     } else {
+//       callback(new Error(`CORS blocked: ${origin}`));
+//     }
+//   },
+//   credentials: true, // ✅ Required for cookies (sessionId, JWT_Token)
+// };
+
+const corsOptions = {
+  origin: true, // allow all origins dynamically
+  credentials: true,
 };
 
 // Use in your app:

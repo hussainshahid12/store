@@ -13,7 +13,7 @@ export const getSessionId = (req, res) => {
 
     res.cookie("sessionId", sessionId, {
       httpOnly: true,
-      secure: false,
+      secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
       maxAge: 1000 * 60 * 60 * 24 * 30,
