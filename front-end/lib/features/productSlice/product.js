@@ -5,6 +5,7 @@ import {
   getALLCategoryService,
   getFilterCategoryService,
   getProductDetailService,
+  getSearchproductService
 } from "@/services/productService";
 
 export const fetchGetProducts = createAsyncThunk(
@@ -71,12 +72,26 @@ export const fetchProductDetail = createAsyncThunk(
   },
 );
 
+export const fetchSearchProduct = createAsyncThunk(
+  "product/fetchSearchProduct",
+  async (query, { rejectWithValue }) => {
+    try {
+      let res = await getSearchproductService(query);
+      return res;
+    } catch (err) {
+      // axios error handling
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  },
+);
+
 const initialState = {
-  items: null,
-  totalProducts: null,
-  error: null,
-  isLoading: false,
-  category: null,
+  items: [],
+  searchItems: [], // empty array so you can safely map over it
+  totalProducts: 0, // start at 0
+  error: null, // no error initially
+  isLoading: false, // not loading initially
+  category: "", // empty string instead of null
 };
 
 const productSlice = createSlice({
@@ -164,6 +179,19 @@ const productSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchProductDetail.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+      })
+      .addCase(fetchSearchProduct.pending, (state, action) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchSearchProduct.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.searchItems = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchSearchProduct.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
       });

@@ -1,234 +1,173 @@
-import customErrorHandler from "../errorHanlding/error.js";
 import Cart from "../model/cart.js";
+import Product from "../model/product.js";
+import { v4 as uuidv4 } from "uuid";
 
 // ===============================
-// Helper Function (Important)
+// SESSION ID
 // ===============================
-const recalculateCart = (cart) => {
-  let totalPrice = 0;
-  let discountAmount = 0;
+export const getSessionId = (req, res) => {
+  let sessionId = req.cookies?.sessionId;
 
-  cart.items.forEach((item) => {
-    const itemTotal = item.price * item.quantity;
-    const itemDiscount = (itemTotal * (item.discountPercent || 0)) / 100;
+  if (!sessionId) {
+    sessionId = uuidv4();
 
-    totalPrice += itemTotal;
-    discountAmount += itemDiscount;
+    res.cookie("sessionId", sessionId, {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 1000 * 60 * 60 * 24 * 30,
+    });
+  }
+
+  return sessionId;
+};
+// ===============================
+// RECALCULATE
+// ===============================
+export const recalculateCart = (cart) => {
+  let total = 0;
+  let discount = 0;
+
+  cart.items.forEach((i) => {
+    const itemTotal = i.price * i.quantity;
+    const itemDiscount = (itemTotal * (i.discountPercent || 0)) / 100;
+
+    total += itemTotal;
+    discount += itemDiscount;
   });
 
-  cart.totalPrice = totalPrice;
-  cart.discountAmount = discountAmount;
-  cart.finalPrice = totalPrice - discountAmount;
+  cart.totalPrice = total;
+  cart.discountAmount = discount;
+  cart.finalPrice = total - discount;
 };
 
 // ===============================
-// Cart Controller
+// FIND OR CREATE CART
+// ===============================
+export const findOrCreateCart = async (req, res) => {
+  const sessionId = getSessionId(req, res);
+
+  // ================= USER =================
+  if (req.user) {
+    let cart = await Cart.findOne({
+      $or: [
+        { userId: req.user.id },
+        { sessionId: sessionId }, //  IMPORTANT
+      ],
+    });
+
+    if (cart) {
+      // attach user
+      cart.userId = req.user.id;
+      cart.sessionId = sessionId; //  keep session
+      await cart.save();
+      return cart;
+    }
+
+    // create new
+    cart = new Cart({
+      userId: req.user.id,
+      sessionId: sessionId,
+      items: [],
+    });
+
+    await cart.save();
+    return cart;
+  }
+
+  // ================= GUEST =================
+  let cart = await Cart.findOne({ sessionId });
+
+  if (!cart) {
+    cart = new Cart({
+      sessionId,
+      items: [],
+    });
+    await cart.save();
+  }
+
+  return cart;
+};
+
+// ===============================
+// CONTROLLER
 // ===============================
 class UserCart {
-  // ===============================
-  // Add To Cart
-  // ===============================
+  //  ADD
   static async addToCart(req, res) {
     try {
-      const { id } = req.user;
+      const { productId, quantity = 1 } = req.body;
 
-      const {
-        title,
-        productId,
-        price,
-        image,
-        quantity = 1,
-        discountPercent = 0,
-      } = req.body;
+      const product = await Product.findById(productId);
+      if (!product)
+        return res.status(404).json({ message: "Product not found" });
 
-      let cart = await Cart.findOne({ userId: id });
+      const cart = await findOrCreateCart(req, res);
 
-      if (!cart) {
-        cart = new Cart({
-          userId: id,
-          items: [
-            {
-              productId,
-              title,
-              price,
-              image,
-              quantity,
-              discountPercent,
-            },
-          ],
-        });
+      const item = cart.items.find((i) => i.productId.toString() === productId);
+
+      if (item) {
+        item.quantity += Number(quantity);
       } else {
-        const itemIndex = cart.items.findIndex(
-          (item) => item.productId.toString() === productId,
-        );
-
-        if (itemIndex > -1) {
-          cart.items[itemIndex].quantity += quantity;
-          cart.items[itemIndex].discountPercent = discountPercent;
-        } else {
-          cart.items.push({
-            productId,
-            title,
-            price,
-            image,
-            quantity,
-            discountPercent,
-          });
-        }
+        cart.items.push({
+          productId: product._id.toString(),
+          title: product.title,
+          image: product.thumbnail,
+          price: product.price,
+          discountPercent: product.discountPercentage || 0,
+          quantity: Number(quantity),
+        });
       }
 
       recalculateCart(cart);
-
       await cart.save();
-
-      res.status(200).json({
-        success: true,
-        message: "Cart updated successfully",
-        cart,
-      });
-    } catch (err) {
-      customErrorHandler({
-        status: 400,
-        message: err.message,
-        req,
-        res,
-      });
-    }
-  }
-
-  // ===============================
-  // Get Cart
-  // ===============================
-  static async getCart(req, res) {
-    try {
-      const { id } = req.user;
-
-      const cart = await Cart.findOne(
-        { userId: id },
-        {
-          items: 1,
-          totalPrice: 1,
-          discountAmount: 1,
-          finalPrice: 1,
-          _id: 0,
-        },
-      );
-
-      if (!cart) {
-        return res.json({
-          success: true,
-          cart: {
-            items: [],
-            totalPrice: 0,
-            discountAmount: 0,
-            finalPrice: 0,
-          },
-        });
-      }
 
       res.json({ success: true, cart });
     } catch (err) {
-      customErrorHandler({
-        status: 400,
-        message: err.message,
-        req,
-        res,
-      });
+      res.status(500).json({ message: err.message });
     }
   }
 
-  // ===============================
-  // Remove Item
-  // ===============================
+  //  GET
+  static async getCart(req, res) {
+    const cart = await findOrCreateCart(req, res);
+    recalculateCart(cart);
+    await cart.save();
+
+    res.json({ success: true, cart });
+  }
+
+  //  REMOVE
   static async removeItem(req, res) {
-    try {
-      const { id } = req.user;
-      const { id: productId } = req.params;
+    const { productId } = req.params;
 
-      let cart = await Cart.findOne({ userId: id });
+    const cart = await findOrCreateCart(req, res);
 
-      if (!cart) {
-        return res.status(404).json({
-          success: false,
-          message: "Cart not found",
-        });
-      }
+    cart.items = cart.items.filter((i) => i.productId.toString() !== productId);
 
-      cart.items = cart.items.filter(
-        (item) => item.productId.toString() !== productId,
-      );
+    recalculateCart(cart);
+    await cart.save();
 
-      recalculateCart(cart);
-
-      await cart.save();
-
-      res.json({
-        success: true,
-        message: "Item removed successfully",
-        cart,
-      });
-    } catch (err) {
-      customErrorHandler({
-        status: 400,
-        message: err.message,
-        req,
-        res,
-      });
-    }
+    res.json({ success: true, cart });
   }
 
-  // ===============================
-  // Update Quantity
-  // ===============================
+  // UPDATE
   static async updateQuantity(req, res) {
-    try {
-      const { id } = req.user;
-      const { productId, quantity } = req.body;
+    const { productId, quantity } = req.body;
 
-      const cart = await Cart.findOne({ userId: id });
+    const cart = await findOrCreateCart(req, res);
 
-      if (!cart) {
-        return res.status(404).json({
-          success: false,
-          message: "Cart not found",
-        });
-      }
+    const item = cart.items.find((i) => i.productId.toString() === productId);
 
-      const item = cart.items.find(
-        (item) => item.productId.toString() === productId,
-      );
+    if (!item) return res.status(404).json({ message: "Item not found" });
 
-      if (!item) {
-        return res.status(404).json({
-          success: false,
-          message: "Item not found",
-        });
-      }
+    item.quantity = Number(quantity);
 
-      // update quantity
-      item.quantity = quantity;
+    recalculateCart(cart);
+    await cart.save();
 
-      // IMPORTANT: recalc everything
-      recalculateCart(cart);
-
-      await cart.save();
-
-      res.json({
-        success: true,
-        message: "Quantity updated successfully",
-        cart: item,
-        totalPrice: cart.totalPrice,
-        discountAmount: cart.discountAmount,
-        finalPrice: cart.totalPrice - cart.discountAmount,
-      });
-    } catch (err) {
-      customErrorHandler({
-        status: 400,
-        message: err.message,
-        req,
-        res,
-      });
-    }
+    res.json({ success: true, cart });
   }
 }
 

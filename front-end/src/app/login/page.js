@@ -1,11 +1,9 @@
 import React from "react";
-import LoginPage from "@/pages/login/Login";
-import Navbar from "@/components/Navbar/Navbar";
+import LoginPage from "../../routes_pages/login/Login";
 
 const page = () => {
   return (
     <>
-      {/* <Navbar/> */}
       <LoginPage />
     </>
   );

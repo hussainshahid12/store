@@ -4,6 +4,7 @@ import {
   getCartIemsService,
   updateCartService,
   removeCartService,
+
 } from "@/services/cartService";
 
 export const fetchAddItem = createAsyncThunk(
@@ -57,8 +58,9 @@ export const fetchCartItemRmove = createAsyncThunk(
     }
   },
 );
+
 const initialState = {
-  items: null,
+  items: [],
   error: null,
   isLoading: false,
 };
@@ -73,10 +75,10 @@ const cartSlice = createSlice({
       state.isLoading = false;
     },
     resetCartStatus: (state) => {
-  state.items.success = false;
-  state.items.message = null;
-  state.error = null;
-},
+      state.items.success = false;
+      state.items.message = null;
+      state.error = null;
+    },
     decrement: (state) => {
       state.value -= 1;
     },
@@ -120,23 +122,7 @@ const cartSlice = createSlice({
       })
       .addCase(fetchCartUdateQnty.fulfilled, (state, action) => {
         state.isLoading = false;
-        const updatedItem = action.payload.cart;
-        const itemsArray = state.items.cart.items;
-        const index = itemsArray.findIndex(
-          (item) => item.productId == updatedItem.productId,
-        );
-        if (index !== -1) {
-          itemsArray[index].quantity = updatedItem.quantity;
-          state.items.cart.items = itemsArray;
-          const totalPrice = action.payload.totalPrice;
-          const discountAmount = action.payload.discountAmount;
-          const finalPrice = action.payload.finalPrice;
-
-          state.items.cart.totalPrice = totalPrice;
-          state.items.cart.discountAmount = discountAmount;
-          state.items.cart.finalPrice = finalPrice;
-        }
-
+        state.items = action.payload;
         state.error = null;
       })
 
@@ -163,6 +149,7 @@ const cartSlice = createSlice({
   },
 });
 
-export const { resetState, decrement, incrementByAmount ,   resetCartStatus} = cartSlice.actions;
+export const { resetState, decrement, incrementByAmount, resetCartStatus } =
+  cartSlice.actions;
 
 export default cartSlice.reducer;

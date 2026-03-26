@@ -1,5 +1,5 @@
 import React from "react";
-import ResendOtpPage from "@/pages/resendOtp/ResendOtpPage";
+import ResendOtpPage from "@/routes_pages/resendOtp/ResendOtpPage";
 
 const page = () => {
   return <ResendOtpPage />;

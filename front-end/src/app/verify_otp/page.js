@@ -1,8 +1,13 @@
-import React from "react";
-import OtpVerifyPage from "@/pages/otp/OtpVerifyPage";
 
-const page = () => {
-  return <OtpVerifyPage />;
+import React, { Suspense } from "react";
+import VerifyPage from "@/routes_pages/otp/OtpVerifyPage";
+
+const Page = () => {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <VerifyPage />
+    </Suspense>
+  );
 };
 
-export default page;
+export default Page;

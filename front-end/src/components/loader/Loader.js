@@ -5,10 +5,10 @@ export default function Loader() {
       {/* Container for the Spinner */}
       <div className="relative flex items-center justify-center">
         {/* Outer Glow / Pulse */}
-        <div className="absolute h-12 w-12 animate-ping rounded-full bg-[#ff6600] opacity-10"></div>
+        <div className="absolute h-12 w-12 animate-ping rounded-full bg-primary opacity-10"></div>
 
         {/* Main Spinning Ring */}
-        <div className="h-10 w-10 animate-spin rounded-full border-2 border-slate-200 border-t-[#ff6600]"></div>
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-slate-200 border-t-primary"></div>
 
         {/* Stationary Inner Circle for stability look */}
         <div className="absolute h-6 w-6 rounded-full border border-slate-100/50"></div>
@@ -16,7 +16,7 @@ export default function Loader() {
 
       {/* Subtle Loading Text */}
       <span className="mt-4 text-[10px] font-semibold tracking-[0.2em] text-slate-500 uppercase">
-        Loading
+        Loading ...
       </span>
     </div>
   );

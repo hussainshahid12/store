@@ -10,5 +10,6 @@ product_router
   .get("/getProductCount", Product.getTotalProducts)
   .get("/getFilterCategory", Product.getFilterCategory)
   .get("/getProductDetail/:id", Product.getProductDetail)
+  .get("/search", Product.searchProducts);
 
 export default product_router;

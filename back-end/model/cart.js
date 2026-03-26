@@ -1,52 +1,39 @@
 import mongoose from "mongoose";
 
-const cartItemSchema = new mongoose.Schema(
+const itemSchema = new mongoose.Schema(
   {
     productId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Product",
-      required: true,
     },
-
-    title: {
-      type: String,
-      required: true,
-    },
-
-    quantity: {
-      type: Number,
-      min: 1,
-      default: 1,
-    },
-    price: {
-      type: Number,
-      required: true,
-    },
-    image: {
-      type: String,
-      required: true,
-    },
-    discountPercent: { type: Number, default: 0 },
+    title: String,
+    image: String,
+    price: Number,
+    discountPercent: Number,
+    quantity: Number,
   },
-  { _id: false },
+  { _id: false }
 );
 
 const cartSchema = new mongoose.Schema(
   {
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-      unique: true,
+      default: null,
     },
-    items: [cartItemSchema],
-
-    totalPrice: Number,
-    discountAmount: Number,
-    finalPrice: Number,
+    sessionId: {
+      type: String,
+      default: null,
+    },
+    items: [itemSchema],
+    totalPrice: { type: Number, default: 0 },
+    discountAmount: { type: Number, default: 0 },
+    finalPrice: { type: Number, default: 0 },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
-const Cart = mongoose.model("Cart", cartSchema);
-export default Cart;
+// 🔥 prevent duplicate carts
+cartSchema.index({ userId: 1 }, { unique: true, sparse: true });
+cartSchema.index({ sessionId: 1 }, { unique: true, sparse: true });
+
+export default mongoose.model("Cart", cartSchema);

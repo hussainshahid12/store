@@ -1,14 +1,12 @@
 import express from "express";
-const cart_router = express.Router();
+const router = express.Router();
+
 import UserCart from "../controller/userCart.js";
-import { Auth } from "../middleware/Auth.js";
+import { optionalAuth } from "../middleware/optionalAuth.js";
 
-// Define your user account routes here
+router.get("/", optionalAuth, UserCart.getCart);
+router.post("/add", optionalAuth, UserCart.addToCart);
+router.put("/update", optionalAuth, UserCart.updateQuantity);
+router.delete("/remove/:productId", optionalAuth, UserCart.removeItem);
 
-cart_router
-  .get("/", Auth, UserCart.getCart)
-  .post("/add", Auth,UserCart.addToCart)
-  .put("/update", Auth,UserCart.updateQuantity)
-  .delete("/remove/:id", Auth,UserCart.removeItem);
-
-export default cart_router;
+export default router;
