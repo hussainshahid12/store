@@ -1,13 +1,19 @@
 import express from "express";
-const app = express();
+import dotenv from "dotenv";
 import cors from "cors";
-import "./DB/config.js";
+import cookieParser from "cookie-parser";
+import connectDB from "./DB/config.js";
+
+// Routes
 import account_router from "./routes/userAccount.js";
 import otp_router from "./routes/verify_otp.js";
-import cookieParser from "cookie-parser";
 import product_router from "./routes/product.js";
 import cart_router from "./routes/userCart.js";
 import order_router from "./routes/order.js";
+
+dotenv.config();
+
+const app = express();
 
 // ✅ CORS config — allows both laptop (localhost) and mobile (LAN IP)
 // const corsOptions = {
@@ -28,33 +34,38 @@ import order_router from "./routes/order.js";
 //   credentials: true, // ✅ Required for cookies (sessionId, JWT_Token)
 // };
 
-const corsOptions = {
-  origin: true, // allow all origins dynamically
-  credentials: true,
-};
-
-// Use in your app:
-// import cors from "cors";
-// app.use(cors(corsOptions));
-
-app.use(cors(corsOptions));
-
-/* --------------- MIDDLEWARES --------------- */
+/* ---------- MIDDLEWARE ---------- */
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 
-// Routes middlewares
+/* ---------- ROUTES ---------- */
 app.use("/account", account_router);
 app.use("/verify_otp", otp_router);
 app.use("/product", product_router);
 app.use("/cart", cart_router);
 app.use("/order", order_router);
 
-//Not found route
-app.use((req, res, next) => {
+/* ---------- 404 ---------- */
+app.use((req, res) => {
   res.status(404).json({ message: "Route not found" });
 });
 
-app.listen(2000, () => {
-  console.log("Server is running on port 2000");
-});
+//  LOCAL SERVER (Development)
+if (process.env.NODE_ENV !== "production") {
+  const PORT = 2000;
+
+  app.listen(PORT, async () => {
+    await connectDB();
+    console.log(` Server running on port ${PORT}`);
+  });
+}
+
+//  VERCEL HANDLER (Production)
+export default async function handler(req, res) {
+  console.log(" API HIT");
+
+  await connectDB(); // ensure DB connection
+
+  return app(req, res);
+}
