@@ -1,20 +1,38 @@
 import mongoose from "mongoose";
-import dotenv from "dotenv";
 
-dotenv.config();
+let cached = global.mongoose;
 
-const mongoUrl = process.env.MongoDB_URL;
-
-if (!mongoUrl) {
-  console.error(
-    "Missing MongoDB_URL in environment. Ensure .env is present and dotenv is configured."
-  );
-  process.exit(1);
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
 }
 
-main().catch((err) => console.log("Error connecting to MongoDB:", err));
+const connectDB = async () => {
+  try {
+    if (cached.conn) {
+      console.log(" Using existing DB connection");
+      return cached.conn;
+    }
 
-async function main() {
-  await mongoose.connect(mongoUrl);
-  console.log("Connected to MongoDB");
-}
+    const mongoUrl = process.env.MongoDB_URL;
+
+    if (!mongoUrl) {
+      throw new Error(" MongoDB_URL missing");
+    }
+
+    if (!cached.promise) {
+      cached.promise = mongoose.connect(mongoUrl).then((mongoose) => {
+        console.log("✅ MongoDB Connected");
+        return mongoose;
+      });
+    }
+
+    cached.conn = await cached.promise;
+    return cached.conn;
+
+  } catch (error) {
+    console.log(" MongoDB Error:", error.message);
+    throw error;
+  }
+};
+
+export default connectDB;
