@@ -8,13 +8,15 @@ import { v4 as uuidv4 } from "uuid";
 export const getSessionId = (req, res) => {
   let sessionId = req.cookies?.sessionId;
 
+  const isProduction = process.env.NODE_ENV === "production";
+
   if (!sessionId) {
     sessionId = uuidv4();
 
     res.cookie("sessionId", sessionId, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
       path: "/",
       maxAge: 1000 * 60 * 60 * 24 * 30,
     });
@@ -47,33 +49,66 @@ export const recalculateCart = (cart) => {
 // ===============================
 export const findOrCreateCart = async (req, res) => {
   const sessionId = getSessionId(req, res);
+  const lastUserId = req.cookies?.lastUserId;
 
-  // ================= USER =================
+  // ================= LOGIN USER =================
   if (req.user) {
-    let cart = await Cart.findOne({
-      $or: [
-        { userId: req.user.id },
-        { sessionId: sessionId }, //  IMPORTANT
-      ],
-    });
+    let userCart = await Cart.findOne({ userId: req.user.id });
+    let guestCart = await Cart.findOne({ sessionId });
 
-    if (cart) {
-      // attach user
-      cart.userId = req.user.id;
-      cart.sessionId = sessionId; //  keep session
-      await cart.save();
-      return cart;
+    // 🔥 MERGE guest → user
+    if (
+      guestCart &&
+      userCart &&
+      guestCart._id.toString() !== userCart._id.toString()
+    ) {
+      guestCart.items.forEach((gItem) => {
+        const existing = userCart.items.find(
+          (i) => i.productId.toString() === gItem.productId.toString(),
+        );
+
+        if (existing) existing.quantity += gItem.quantity;
+        else userCart.items.push(gItem);
+      });
+
+      await Cart.deleteOne({ _id: guestCart._id });
     }
 
-    // create new
-    cart = new Cart({
+    // 🔥 convert guest → user
+    if (!userCart && guestCart) {
+      guestCart.userId = req.user.id;
+      guestCart.sessionId = sessionId;
+      await guestCart.save();
+      return guestCart;
+    }
+
+    // 🔥 normal user cart
+    if (userCart) {
+      userCart.sessionId = sessionId;
+      await userCart.save();
+      return userCart;
+    }
+
+    // 🔥 create new
+    const newCart = new Cart({
       userId: req.user.id,
-      sessionId: sessionId,
+      sessionId,
       items: [],
     });
 
-    await cart.save();
-    return cart;
+    await newCart.save();
+    return newCart;
+  }
+
+  // ================= LOGOUT USER (IMPORTANT) =================
+  if (!req.user && lastUserId) {
+    let cart = await Cart.findOne({ userId: lastUserId });
+
+    if (cart) {
+      cart.sessionId = sessionId;
+      await cart.save();
+      return cart;
+    }
   }
 
   // ================= GUEST =================
@@ -94,7 +129,7 @@ export const findOrCreateCart = async (req, res) => {
 // CONTROLLER
 // ===============================
 class UserCart {
-  //  ADD
+  // ADD
   static async addToCart(req, res) {
     try {
       const { productId, quantity = 1 } = req.body;
@@ -129,7 +164,7 @@ class UserCart {
     }
   }
 
-  //  GET
+  // GET
   static async getCart(req, res) {
     const cart = await findOrCreateCart(req, res);
     recalculateCart(cart);
@@ -138,7 +173,7 @@ class UserCart {
     res.json({ success: true, cart });
   }
 
-  //  REMOVE
+  // REMOVE
   static async removeItem(req, res) {
     const { productId } = req.params;
 

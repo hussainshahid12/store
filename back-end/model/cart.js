@@ -2,9 +2,7 @@ import mongoose from "mongoose";
 
 const itemSchema = new mongoose.Schema(
   {
-    productId: {
-      type: mongoose.Schema.Types.ObjectId,
-    },
+    productId: mongoose.Schema.Types.ObjectId,
     title: String,
     image: String,
     price: Number,
@@ -32,8 +30,21 @@ const cartSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// 🔥 prevent duplicate carts
-cartSchema.index({ userId: 1 }, { unique: true, sparse: true });
-cartSchema.index({ sessionId: 1 }, { unique: true, sparse: true });
+// 🔥 FIXED INDEXES (NO DUPLICATE ERROR)
+cartSchema.index(
+  { userId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { userId: { $type: "objectId" } },
+  }
+);
+
+cartSchema.index(
+  { sessionId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { sessionId: { $type: "string" } },
+  }
+);
 
 export default mongoose.model("Cart", cartSchema);
