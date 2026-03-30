@@ -1,7 +1,6 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import dotenv from "dotenv";
 
 import { connectDB } from "./DB/config.js";
 
@@ -11,15 +10,12 @@ import product_router from "./routes/product.js";
 import cart_router from "./routes/userCart.js";
 import order_router from "./routes/order.js";
 
-
-dotenv.config();
-
 const app = express();
 
-// ✅ Connect DB
+// ✅ DB
 connectDB();
 
-// ================= CORS (FINAL) =================
+// ================= CORS =================
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   process.env.FRONTEND_URL_LAN,
@@ -28,18 +24,9 @@ const allowedOrigins = [
 
 app.use(
   cors({
-    origin: function (origin, callback) {
-      // allow requests with no origin (mobile apps, Postman)
-      if (!origin) return callback(null, true);
-
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      } else {
-        return callback(new Error("CORS not allowed"));
-      }
-    },
+    origin: allowedOrigins,
     credentials: true,
-  })
+  }),
 );
 
 // ================= MIDDLEWARE =================
@@ -53,19 +40,20 @@ app.use("/product", product_router);
 app.use("/cart", cart_router);
 app.use("/order", order_router);
 
-// ================= HEALTH CHECK =================
 app.get("/", (req, res) => {
   res.send("API Running 🚀");
 });
 
-// ================= 404 =================
-app.use((req, res) => {
-  res.status(404).json({ message: "Route not found" });
-});
+// ================= 🔥 DYNAMIC SERVER =================
+const isVercel = process.env.NODE_ENV === "production";
 
-// ================= SERVER =================
-const PORT = process.env.PORT || 2000;
+if (!isVercel) {
+  const PORT = process.env.PORT || 2000;
 
-app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
-});
+  app.listen(PORT, () => {
+    console.log(`✅ Server running on port ${PORT}`);
+  });
+}
+
+// ✅ EXPORT for Vercel
+export default app;
