@@ -34,11 +34,11 @@ app.use(express.json());
 app.use(cookieParser());
 
 // ================= ROUTES =================
-app.use("/account", account_router);
-app.use("/verify_otp", otp_router);
-app.use("/product", product_router);
-app.use("/cart", cart_router);
-app.use("/order", order_router);
+app.use("/api/account", account_router);
+app.use("/api/verify_otp", otp_router);
+app.use("/api/product", product_router);
+app.use("/api/cart", cart_router);
+app.use("/api/order", order_router);
 
 app.get("/", (req, res) => {
   res.send("API Running 🚀");

@@ -1,6 +1,6 @@
 import { api } from "./api";
 export const getProductsService = async (pageNo, order) => {
-  let url = "/product/getproducts";
+  let url = "/api/product/getproducts";
 
   if (pageNo) {
     url += `?page=${pageNo}`;
@@ -14,7 +14,7 @@ export const getProductsService = async (pageNo, order) => {
 };
 
 export const getProductCountService = async (countFlage, category) => {
-  let url = `/product/getProductCount`;
+  let url = `/api/product/getProductCount`;
   if (countFlage && category) {
     url += `?countCategory=${countFlage}&category=${category}`;
   }
@@ -24,13 +24,13 @@ export const getProductCountService = async (countFlage, category) => {
 };
 
 export const getALLCategoryService = async () => {
-  let url = `/product/`;
+  let url = `/api/product/`;
   const response = await api.get(url);
   return response.data;
 };
 
 export const getFilterCategoryService = async (page, category, sort, order) => {
-  let url = `/product/getFilterCategory?page=${page}&category=${category}`;
+  let url = `/api/product/getFilterCategory?page=${page}&category=${category}`;
   if (sort && order) {
     url += `&sort=true&order=${order}`;
   }
@@ -39,13 +39,13 @@ export const getFilterCategoryService = async (page, category, sort, order) => {
 };
 
 export const getProductDetailService = async (id) => {
-  let url = `/product/getProductDetail/${id}`;
+  let url = `/api/product/getProductDetail/${id}`;
   const response = await api.get(url);
   return response.data;
 };
 
 export const getSearchproductService = async (query) => {
-  let url = `/product/search/?q=${query}`;
+  let url = `/api/product/search/?q=${query}`;
   const response = await api.get(url);
   return response.data;
 };

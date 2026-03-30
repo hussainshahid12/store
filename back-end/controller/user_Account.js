@@ -87,7 +87,6 @@ class UserAccount {
         httpOnly: true,
         secure: isProduction,
         sameSite: isProduction ? "none" : "lax",
-         domain: ".vercel.app", // 🔥 IMPORTANT
         path: "/",
       });
 
