@@ -1,38 +1,21 @@
 import mongoose from "mongoose";
+import dotenv from "dotenv";
 
-let cached = global.mongoose;
+dotenv.config();
 
-if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null };
+const mongoUrl = process.env.MongoDB_URL;
+
+if (!mongoUrl) {
+  console.error("❌ MongoDB_URL missing");
+  process.exit(1);
 }
 
-const connectDB = async () => {
+export const connectDB = async () => {
   try {
-    if (cached.conn) {
-      console.log(" Using existing DB connection");
-      return cached.conn;
-    }
-
-    const mongoUrl = process.env.MongoDB_URL;
-
-    if (!mongoUrl) {
-      throw new Error(" MongoDB_URL missing");
-    }
-
-    if (!cached.promise) {
-      cached.promise = mongoose.connect(mongoUrl).then((mongoose) => {
-        console.log("✅ MongoDB Connected");
-        return mongoose;
-      });
-    }
-
-    cached.conn = await cached.promise;
-    return cached.conn;
-
-  } catch (error) {
-    console.log(" MongoDB Error:", error.message);
-    throw error;
+    await mongoose.connect(mongoUrl);
+    console.log("✅ MongoDB Connected");
+  } catch (err) {
+    console.error("❌ DB Error:", err.message);
+    process.exit(1);
   }
 };
-
-export default connectDB;

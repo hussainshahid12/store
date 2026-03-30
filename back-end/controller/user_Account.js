@@ -12,33 +12,40 @@ class UserAccount {
     try {
       const { fullName, email, mobileNumber, password } = req.body;
 
-      // Correct validation
       if (!fullName || !email || !mobileNumber || !password) {
-        return customErrorHandler(
-          { statusCode: 400, message: "All fields are required" },
-          req,
-          res,
-        );
+        return res.status(400).json({ message: "All fields are required" });
       }
 
-      // Check existing user (recommended)
       const existingUser = await User.findOne({ email });
       if (existingUser) {
-        return res.status(400).json({
-          message: "User already exists",
-        });
+        return res.status(400).json({ message: "User already exists" });
       }
 
-      const user = new User(req.body);
-
+      // Hash password first
       const saltRounds = Number(process.env.saltRounds);
-      const hash = await bcrypt.hash(password, saltRounds);
-      user.password = hash;
-
-      await user.save();
+      const hashedPassword = await bcrypt.hash(password, saltRounds);
 
       const otp = generateOtp();
       console.log("Generated OTP:", otp);
+
+      // ✅ Send email FIRST
+      const result = await sendOtpEmail(email, otp);
+
+      if (!result.success) {
+        return res.status(500).json({
+          message: "Email failed. User not created.",
+        });
+      }
+
+      // ✅ Only save if email success
+      const user = new User({
+        fullName,
+        email,
+        mobileNumber,
+        password: hashedPassword,
+      });
+
+      await user.save();
 
       const newOtp = new Otp({
         userId: user._id,
@@ -47,26 +54,17 @@ class UserAccount {
 
       await newOtp.save();
 
-      // Send OTP email
-      const result = await sendOtpEmail(user.email, otp);
-
-      if (!result.success) {
-        return res.status(500).json({
-          message: "OTP email failed",
-        });
-      }
-
       res.status(201).json({
-        message: "Signup successful. OTP sent to email.",
+        message: "Signup successful. OTP sent.",
         userId: user._id,
-        email,
       });
     } catch (err) {
-      customErrorHandler({ statusCode: 500, message: err.message }, req, res);
+      res.status(500).json({ message: err.message });
     }
   }
 
   static async login(req, res) {
+    const isProduction = process.env.NODE_ENV === "production";
     const { email, password } = req.body;
 
     try {
@@ -87,7 +85,9 @@ class UserAccount {
 
       res.cookie("JWT_Token", token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
+        secure: isProduction,
+        sameSite: isProduction ? "none" : "lax",
+        path: "/",
       });
 
       return res.status(200).json({
@@ -105,15 +105,28 @@ class UserAccount {
   }
 
   static async logout(req, res) {
-    res.clearCookie("JWT_Token", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-    });
+    try {
+      res.clearCookie("JWT_Token", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+      });
 
-    res.status(200).json({
-      msg: "Account Logout Successfully",
-    });
+      // ❗ IMPORTANT:
+      // DO NOT clear sessionId (cart will break)
+      // DO NOT clear lastUserId (needed for same cart after logout)
+
+      res.status(200).json({
+        success: true,
+        message: "Account Logout Successfully",
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
   }
 }
 
