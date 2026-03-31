@@ -40,38 +40,36 @@ export default function LoginForm() {
     formState: { errors },
   } = useForm();
 
+  // Reset states
   useEffect(() => {
     setMounted(true);
     dispatch(resetCart());
     dispatch(resetUser());
   }, [dispatch]);
 
+  // Handle login success
   useEffect(() => {
     if (!mounted) return;
 
     if (error) {
-      console.log("[Login Debug] Error:", error);
       toast.error(error);
       return;
     }
 
     if (state?.isVerified) {
-      console.log("[Login Debug] User is verified", state);
+      // ✅ Store token
       localStorage.setItem("isAuth", state.token);
+
+      // ✅ Update auth context instantly
       setIsAuth(true);
-      setTimeout(() => {
-        const redirect = searchParams?.get("redirect") || "/";
-        console.log("[Login Debug] Redirecting to:", redirect);
-        router.push(redirect);
-      }, 100);
-    } else {
-      console.log(
-        "[Login Debug] Not verified or waiting for state update",
-        state,
-      );
+
+      // ✅ Redirect
+      const redirect = searchParams?.get("redirect") || "/";
+
+      router.replace(redirect); // better than push
+      router.refresh(); // 🔥 FIX for Vercel issue
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state?.isVerified, error, mounted]);
+  }, [state?.isVerified, error, mounted, searchParams, router, setIsAuth]);
 
   const onSubmit = (data) => {
     dispatch(fetchLoginUser(data));
