@@ -12,15 +12,15 @@ export function middleware(request) {
     "/cart",
   ];
 
-  const isAuth = request.cookies.get("JWT_Token");
+  const token = request.cookies.get("JWT_Token")?.value;
 
-  // If logged in and trying to access public page → redirect home
-  if (isAuth && publicRoutes.includes(path)) {
+  // Logged in user trying to access auth pages
+  if (token && publicRoutes.includes(path)) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
-  // If not logged in and accessing protected page → redirect login
-  if (!isAuth && !publicRoutes.includes(path)) {
+  // Not logged in → block protected routes
+  if (!token && !publicRoutes.includes(path)) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
@@ -28,15 +28,5 @@ export function middleware(request) {
 }
 
 export const config = {
-  //   matcher: ["/((?!_next|api|favicon.ico).*)"],   middleWare function all reoutes this method
-  matcher: [
-    // "/product/:path*",
-    "/login",
-    "/signUp",
-    "/category/:path*",
-    "/verify_otp",
-    "/resend_otp",
-    "/forgot-password",
-    "/checkout",
-  ],
+  matcher: ["/((?!_next|favicon.ico|api).*)"], // 🔥 apply everywhere
 };

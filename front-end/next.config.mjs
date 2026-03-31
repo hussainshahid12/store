@@ -11,7 +11,7 @@ const nextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: "https://pak-bazar-api.vercel.app/:path*",
+        destination: "https://pak-bazar-api.vercel.app/api/:path*",
       },
     ];
   },
