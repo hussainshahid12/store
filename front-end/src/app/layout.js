@@ -1,6 +1,7 @@
 import "./globals.css";
 import ReduxProvider from "../../lib/ReduxProvider";
 import WhatsAppButton from "@/components/btnWhatsapp/ButtonWhatsapp";
+import { AuthProvider } from "@/context/AuthContext";
 
 export const metadata = {
   title: "Create Next App",
@@ -12,9 +13,9 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className="antialiased">
         <ReduxProvider>
-          {children}
+          <AuthProvider>{children}</AuthProvider>
         </ReduxProvider>
-         <WhatsAppButton />
+        <WhatsAppButton />
       </body>
     </html>
   );

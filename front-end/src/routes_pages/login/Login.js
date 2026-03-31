@@ -16,8 +16,12 @@ import Loader from "@/components/loader/Loader";
 import { useRouter } from "next/navigation";
 import { resetState as resetCart } from "../../../lib/features/cartSlice/cart";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSearchParams } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 export default function LoginPage() {
+  const searchParams = useSearchParams();
+  const { setIsAuth } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -53,10 +57,12 @@ export default function LoginPage() {
     const handleAuthSuccess = async () => {
       if (state?.isVerified) {
         localStorage.setItem("isAuth", state.token);
-        toast.success(state?.message || "Welcome back!");
 
-        // Immediate redirect to match Signup feel
-        router.back();
+        setIsAuth(true); // 🔥 instant UI update
+
+        const redirect = searchParams.get("redirect");
+
+        router.push(redirect || "/"); // ✅ NO refresh needed
       }
     };
 

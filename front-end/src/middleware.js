@@ -13,15 +13,18 @@ export function middleware(request) {
   ];
 
   const isAuth = request.cookies.get("JWT_Token");
+  console.log(isAuth);
 
   // If logged in and trying to access public page → redirect home
   if (isAuth && publicRoutes.includes(path)) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
-  // If not logged in and accessing protected page → redirect login
+  // If not logged in → redirect with return path
   if (!isAuth && !publicRoutes.includes(path)) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("redirect", path);
+    return NextResponse.redirect(loginUrl);
   }
 
   return NextResponse.next();
