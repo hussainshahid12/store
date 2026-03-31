@@ -173,15 +173,20 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleSignOut = () => {
-    dispatch(fetchUserLogout());
+  const handleSignOut = async () => {
+    await dispatch(fetchUserLogout());
+
     localStorage.removeItem("isAuth");
     localStorage.removeItem("token");
+
     setAuthData(null);
     setUserOpen(false);
     setIsAuth(false);
+
     toast.success("Signed out successfully");
-    router.push("/login");
+
+    router.replace("/login");
+    router.refresh(); // 🔥 IMPORTANT
   };
 
   if (!mounted) return <div className="h-20 bg-white border-b" />; // Placeholder for SSR
