@@ -57,11 +57,13 @@ export default function LoginForm() {
     if (state?.isVerified) {
       localStorage.setItem("isAuth", state.token);
       setIsAuth(true);
-
-      const redirect = searchParams?.get("redirect") || "/";
-      router.push(redirect);
+      setTimeout(() => {
+        const redirect = searchParams?.get("redirect") || "/";
+        router.push(redirect);
+      }, 100);
     }
-  }, [state, error, router, mounted, searchParams, setIsAuth]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state?.isVerified, error, mounted]);
 
   const onSubmit = (data) => {
     dispatch(fetchLoginUser(data));
