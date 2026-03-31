@@ -50,17 +50,25 @@ export default function LoginForm() {
     if (!mounted) return;
 
     if (error) {
+      console.log("[Login Debug] Error:", error);
       toast.error(error);
       return;
     }
 
     if (state?.isVerified) {
+      console.log("[Login Debug] User is verified", state);
       localStorage.setItem("isAuth", state.token);
       setIsAuth(true);
       setTimeout(() => {
         const redirect = searchParams?.get("redirect") || "/";
+        console.log("[Login Debug] Redirecting to:", redirect);
         router.push(redirect);
       }, 100);
+    } else {
+      console.log(
+        "[Login Debug] Not verified or waiting for state update",
+        state,
+      );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state?.isVerified, error, mounted]);
