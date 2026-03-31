@@ -21,6 +21,7 @@ import CartItem from "../cartItems/CartItem";
 import { fetchCartItems } from "../../../lib/features/cartSlice/cart";
 import { fetchSearchProduct } from "../../../lib/features/productSlice/product";
 import decode from "../../../utils/tokenDecoded/decoded";
+import { useAuth } from "@/context/AuthContext";
 
 // --- SUB-COMPONENT: CART DRAWER ---
 const CartDrawer = memo(({ isOpen, onClose }) => {
@@ -110,6 +111,7 @@ const CartDrawer = memo(({ isOpen, onClose }) => {
 CartDrawer.displayName = "CartDrawer";
 
 export default function Navbar() {
+  const { setIsAuth } = useAuth();
   const [mounted, setMounted] = useState(false); // Fix for Hydration Mismatch
   const dispatch = useDispatch();
   const router = useRouter();
@@ -177,6 +179,7 @@ export default function Navbar() {
     localStorage.removeItem("token");
     setAuthData(null);
     setUserOpen(false);
+    setIsAuth(false);
     toast.success("Signed out successfully");
     router.push("/login");
   };
