@@ -13,15 +13,15 @@ import {
 } from "../../../lib/features/userSlice/user";
 import toast, { Toaster } from "react-hot-toast";
 import Loader from "@/components/loader/Loader";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { resetState as resetCart } from "../../../lib/features/cartSlice/cart";
-import { motion, AnimatePresence } from "framer-motion";
-import { useSearchParams } from "next/navigation";
+import { motion } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 
-export default function LoginPage() {
+export default function LoginForm() {
   const searchParams = useSearchParams();
   const { setIsAuth } = useAuth();
+
   const [mounted, setMounted] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -54,20 +54,14 @@ export default function LoginPage() {
       return;
     }
 
-    const handleAuthSuccess = async () => {
-      if (state?.isVerified) {
-        localStorage.setItem("isAuth", state.token);
+    if (state?.isVerified) {
+      localStorage.setItem("isAuth", state.token);
+      setIsAuth(true);
 
-        setIsAuth(true); // 🔥 instant UI update
-
-        const redirect = searchParams.get("redirect");
-
-        router.push(redirect || "/"); // ✅ NO refresh needed
-      }
-    };
-
-    handleAuthSuccess();
-  }, [state, error, router, mounted, dispatch]);
+      const redirect = searchParams?.get("redirect") || "/";
+      router.push(redirect);
+    }
+  }, [state, error, router, mounted, searchParams, setIsAuth]);
 
   const onSubmit = (data) => {
     dispatch(fetchLoginUser(data));
@@ -77,6 +71,7 @@ export default function LoginPage() {
 
   const inputStyle =
     "w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-gray-800/40 border border-slate-200 dark:border-gray-700 rounded-2xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-700 dark:text-white placeholder:text-slate-400 font-medium";
+
   const iconStyle =
     "absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5";
 
@@ -84,31 +79,33 @@ export default function LoginPage() {
     <section className="min-h-screen bg-[#f1f5f9] dark:bg-black flex items-center justify-center p-4 relative overflow-hidden">
       <Toaster position="top-center" />
 
-      {/* Background Decorative Elements */}
+      {/* Background */}
       <div className="absolute top-[-10%] right-[-10%] w-[45%] h-[45%] bg-primary/10 rounded-full blur-[120px]" />
       <div className="absolute bottom-[-10%] left-[-10%] w-[45%] h-[45%] bg-blue-600/10 rounded-full blur-[120px]" />
 
-      {/* Loader shows during Login and Cart Merge */}
       {loading && <Loader />}
 
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: "easeOut" }} // Speed matched to Signup
+        transition={{ duration: 0.4 }}
         className="w-full max-w-[480px] z-10"
       >
-        <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[3rem] shadow-[0_32px_64px_-15px_rgba(0,0,0,0.1)] p-8 sm:p-12 border border-white dark:border-gray-800">
+        <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[3rem] shadow-xl p-8 sm:p-12 border border-white dark:border-gray-800">
+          {/* Header */}
           <header className="text-center mb-10">
-            <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight mb-2">
+            <h1 className="text-4xl font-black text-slate-900 dark:text-white">
               Welcome Back
             </h1>
-            <p className="text-slate-500 dark:text-gray-400 font-medium">
+            <p className="text-slate-500 dark:text-gray-400">
               Enter your details to continue
             </p>
           </header>
 
+          {/* Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-            <div className="space-y-1">
+            {/* Email */}
+            <div>
               <div className="relative">
                 <HiMail className={iconStyle} />
                 <input
@@ -119,13 +116,14 @@ export default function LoginPage() {
                 />
               </div>
               {errors.email && (
-                <p className="text-[10px] text-red-500 ml-2 font-bold uppercase">
+                <p className="text-xs text-red-500 ml-2">
                   {errors.email.message}
                 </p>
               )}
             </div>
 
-            <div className="space-y-1">
+            {/* Password */}
+            <div>
               <div className="relative">
                 <HiLockClosed className={iconStyle} />
                 <input
@@ -139,84 +137,60 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2"
                 >
-                  {showPassword ? <HiEyeOff size={20} /> : <HiEye size={20} />}
+                  {showPassword ? <HiEyeOff /> : <HiEye />}
                 </button>
               </div>
-              <div className="flex justify-end pr-1">
+
+              <div className="flex justify-end mt-1">
                 <Link
                   href="/forgot-password"
-                  size={20}
-                  className="text-xs font-bold text-primary hover:opacity-80"
+                  className="text-xs text-primary font-bold"
                 >
                   Forgot Password?
                 </Link>
               </div>
+
               {errors.password && (
-                <p className="text-[10px] text-red-500 ml-2 font-bold uppercase">
+                <p className="text-xs text-red-500 ml-2">
                   {errors.password.message}
                 </p>
               )}
             </div>
 
-            <label className="flex items-center gap-3 cursor-pointer group w-fit ml-1">
-              <input
-                type="checkbox"
-                className="w-5 h-5 rounded-lg border-slate-200 dark:border-gray-700 text-primary"
-              />
-              <span className="text-sm text-slate-500 dark:text-gray-400 font-medium group-hover:text-primary">
-                Keep me logged in
-              </span>
-            </label>
-
+            {/* Button */}
             <button
               type="submit"
-              className="w-full bg-primary text-white rounded-2xl py-4 font-bold text-lg shadow-lg shadow-primary/30 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all active:scale-[0.98] mt-2"
+              className="w-full bg-primary text-white rounded-2xl py-4 font-bold text-lg hover:opacity-90 transition"
             >
               Sign In
             </button>
           </form>
 
-          <div className="mt-10">
-            <div className="relative mb-8">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-100 dark:border-gray-800"></div>
-              </div>
-              <div className="relative flex justify-center text-[10px] font-black text-slate-400 uppercase tracking-widest px-4">
-                Secure Social Login
-              </div>
-            </div>
+          {/* Social */}
+          <div className="mt-10 grid grid-cols-2 gap-4">
+            <button className="flex items-center justify-center gap-2 border rounded-xl py-3">
+              <Image
+                src="https://www.svgrepo.com/show/475656/google-color.svg"
+                alt="google"
+                width={18}
+                height={18}
+              />
+              Google
+            </button>
 
-            <div className="grid grid-cols-2 gap-4">
-              <button className="flex items-center justify-center gap-3 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-2xl py-3.5 px-4 font-bold text-slate-700 dark:text-white hover:bg-slate-50 group">
-                <Image
-                  src="https://www.svgrepo.com/show/475656/google-color.svg"
-                  alt="Google"
-                  width={18}
-                  height={18}
-                />
-                <span className="text-sm group-hover:scale-105 transition-transform">
-                  Google
-                </span>
-              </button>
-
-              <button className="flex items-center justify-center gap-3 bg-[#1877F2] text-white rounded-2xl py-3.5 px-4 font-bold hover:bg-[#145dbf] group">
-                <FaFacebook size={18} />
-                <span className="text-sm group-hover:scale-105 transition-transform">
-                  Facebook
-                </span>
-              </button>
-            </div>
+            <button className="flex items-center justify-center gap-2 bg-blue-600 text-white rounded-xl py-3">
+              <FaFacebook />
+              Facebook
+            </button>
           </div>
 
-          <p className="mt-10 text-center text-slate-500 dark:text-gray-400 font-medium">
-            Don't have an account?{" "}
-            <Link
-              href="/signUp"
-              className="text-primary font-black hover:underline underline-offset-4"
-            >
-              Sign Up Free
+          {/* Footer */}
+          <p className="mt-8 text-center text-sm">
+            Don’t have an account?{" "}
+            <Link href="/signUp" className="text-primary font-bold">
+              Sign Up
             </Link>
           </p>
         </div>

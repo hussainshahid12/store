@@ -10,10 +10,13 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const auth = decode();
-    console.log("auth context", auth);
-    if (auth?.status) {
-      // setIsAuth(true);
+    // Only run on client
+    if (typeof window !== "undefined") {
+      const auth = decode();
+      console.log("auth context", auth);
+      if (auth?.status) {
+        setIsAuth(true);
+      }
       setLoading(false);
     }
   }, []);
@@ -26,3 +29,4 @@ export const AuthProvider = ({ children }) => {
 };
 
 export const useAuth = () => useContext(AuthContext);
+
