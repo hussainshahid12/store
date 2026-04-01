@@ -23,6 +23,8 @@ import { fetchSearchProduct } from "../../../lib/features/productSlice/product";
 import decode from "../../../utils/tokenDecoded/decoded";
 import { useAuth } from "@/context/AuthContext";
 
+
+
 // --- SUB-COMPONENT: CART DRAWER ---
 const CartDrawer = memo(({ isOpen, onClose }) => {
   const [updatingId, setUpdatingId] = useState(null);
@@ -111,7 +113,8 @@ const CartDrawer = memo(({ isOpen, onClose }) => {
 CartDrawer.displayName = "CartDrawer";
 
 export default function Navbar() {
-  const { setIsAuth } = useAuth();
+  const { isAuth, setIsAuth } = useAuth();
+  console.log("Navbar", isAuth )
   const [mounted, setMounted] = useState(false); // Fix for Hydration Mismatch
   const dispatch = useDispatch();
   const router = useRouter();
@@ -122,7 +125,6 @@ export default function Navbar() {
   const searchItems = useSelector((state) => state.product?.searchItems || []);
   const isSearchLoading = useSelector((state) => state.product?.isLoading);
 
-  const [authData, setAuthData] = useState(null);
   const [userOpen, setUserOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -135,10 +137,8 @@ export default function Navbar() {
   // Initialize Client-Side Data
   useEffect(() => {
     setMounted(true);
-    const decoded = decode();
-    setAuthData(decoded);
     dispatch(fetchCartItems());
-  }, [dispatch]);
+  }, []);
 
   // Auto-open drawer when count increases
   useEffect(() => {
@@ -179,14 +179,13 @@ export default function Navbar() {
     localStorage.removeItem("isAuth");
     localStorage.removeItem("token");
 
-    setAuthData(null);
     setUserOpen(false);
-    setIsAuth(false);
+    setIsAuth(null);
 
     toast.success("Signed out successfully");
 
     router.replace("/login");
-    router.refresh(); // 🔥 IMPORTANT
+    // router.refresh(); // 🔥 IMPORTANT
   };
 
   if (!mounted) return <div className="h-20 bg-white border-b" />; // Placeholder for SSR
@@ -243,7 +242,7 @@ export default function Navbar() {
           </div>
 
           <div className="flex items-center gap-2 md:gap-4">
-            {authData?.status && (
+            {isAuth?.status && (
               <Link
                 href="/track-order"
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 border border-orange-100 rounded-full"
@@ -272,7 +271,7 @@ export default function Navbar() {
             </button>
 
             <div className="relative" ref={userRef}>
-              {authData?.status ? (
+              {isAuth?.status ? (
                 <>
                   <button
                     onClick={() => setUserOpen(!userOpen)}
@@ -293,7 +292,7 @@ export default function Navbar() {
                           Account
                         </p>
                         <p className="text-sm font-bold truncate">
-                          {authData?.fullName}
+                          {isAuth?.fullName}
                         </p>
                       </div>
                       {subMenuItems.map((item) => (

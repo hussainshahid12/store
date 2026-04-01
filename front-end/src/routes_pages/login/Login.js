@@ -17,6 +17,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { resetState as resetCart } from "../../../lib/features/cartSlice/cart";
 import { motion } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
+import decode from "../../../utils/tokenDecoded/decoded";
 
 export default function LoginForm() {
   const searchParams = useSearchParams();
@@ -57,17 +58,22 @@ export default function LoginForm() {
     }
 
     if (state?.isVerified) {
-      // ✅ Store token
+      // 1. Save token
       localStorage.setItem("isAuth", state.token);
 
-      // ✅ Update auth context instantly
-      setIsAuth(true);
+      // 2. Decode token
+      const decoded = decode(state.token);
 
-      // ✅ Redirect
+      // 3. Update context instantly
+      setIsAuth(decoded);
+
+      // 4. Redirect
       const redirect = searchParams?.get("redirect") || "/";
 
-      router.replace(redirect); // better than push
-      router.refresh(); // 🔥 FIX for Vercel issue
+      router.replace(redirect);
+
+      // 5. FORCE refresh (you want this for Vercel)
+      // router.refresh();
     }
   }, [state?.isVerified, error, mounted, searchParams, router, setIsAuth]);
 
