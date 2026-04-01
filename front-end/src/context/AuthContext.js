@@ -6,19 +6,20 @@ import decode from "../../utils/tokenDecoded/decoded";
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [isAuth, setIsAuth] = useState(false);
+  const [isAuth, setIsAuth] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Only run on client
-    if (typeof window !== "undefined") {
-      const auth = decode();
-      console.log("auth context", auth);
-      if (auth?.status) {
-        setIsAuth(true);
+    const token = localStorage.getItem("isAuth");
+
+    if (token) {
+      const decoded = decode(token);
+      if (decoded) {
+        setIsAuth(decoded);
       }
-      setLoading(false);
     }
+
+    setLoading(false);
   }, []);
 
   return (
@@ -29,4 +30,3 @@ export const AuthProvider = ({ children }) => {
 };
 
 export const useAuth = () => useContext(AuthContext);
-
