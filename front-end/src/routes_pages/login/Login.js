@@ -131,7 +131,7 @@ export default function LoginForm() {
               </div>
 
               {errors.email && (
-                <p className="text-xs text-red-500 ml-2">
+                <p className="text-[10px] text-red-500 ml-2 font-bold ">
                   {errors.email.message}
                 </p>
               )}
@@ -149,6 +149,11 @@ export default function LoginForm() {
                   placeholder="Password"
                   className={inputStyle}
                 />
+                  {errors.password && (
+                <p className="text-[10px] text-red-500 ml-2 font-bold ">
+                  {errors.password.message}
+                </p>
+              )}
 
                 <button
                   type="button"
@@ -168,11 +173,7 @@ export default function LoginForm() {
                 </Link>
               </div>
 
-              {errors.password && (
-                <p className="text-xs text-red-500 ml-2">
-                  {errors.password.message}
-                </p>
-              )}
+            
             </div>
 
             {/* BUTTON */}

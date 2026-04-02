@@ -73,7 +73,7 @@ export const fetchMyOrderCancel = createAsyncThunk(
 );
 
 const initialState = {
-  order: [],
+  order: null,
   myOrders: [],
   address: [],
   error: null,
@@ -112,7 +112,7 @@ const orderSlice = createSlice({
         state.isLoading = false;
         state.order = action.payload;
         // myorder is [] i want create new order disptach function run again in order history page
-        state.myOrders=[]
+        state.myOrders = [];
         state.error = null;
       })
       .addCase(fetchCreateOrder.rejected, (state, action) => {
@@ -153,12 +153,21 @@ const orderSlice = createSlice({
       .addCase(fetchMyOrderCancel.fulfilled, (state, action) => {
         state.isLoading = false;
         state.order = action.payload;
+        if (state.myOrders.length > 0) {
+          const id = state.order._id;
+
+          const index = state.myOrders.findIndex((item) => item._id === id);
+
+          if (index !== -1) {
+            state.myOrders.splice(index, 1, state.order);
+          }
+        }
+
         state.error = null;
       })
       .addCase(fetchMyOrderCancel.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
-        // state.order = []
       })
       .addCase(fetchMyOrders.pending, (state, action) => {
         state.isLoading = true;
@@ -169,6 +178,7 @@ const orderSlice = createSlice({
         state.myOrders = action.payload;
         state.error = null;
       })
+
       .addCase(fetchMyOrders.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
