@@ -24,10 +24,11 @@ export default function LoginForm() {
   const router = useRouter();
   const dispatch = useDispatch();
 
-  const { isAuth, setIsAuth, loading: authLoading } = useAuth();
+  const { isAuth, setIsAuth } = useAuth();
 
   const [mounted, setMounted] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [shouldRedirect, setShouldRedirect] = useState(false);
 
   const {
     userInfo: state,
@@ -48,7 +49,7 @@ export default function LoginForm() {
     dispatch(resetUser());
   }, [dispatch]);
 
-  // 🔹 Handle login success (ONLY set auth here)
+  // 🔹 Handle login success (ONLY set auth)
   useEffect(() => {
     if (!mounted) return;
 
@@ -57,28 +58,30 @@ export default function LoginForm() {
       return;
     }
 
-if (state?.isVerified) {
-  localStorage.setItem("isAuth", state.token);
+    if (state?.isVerified) {
+      // Save token
+      localStorage.setItem("isAuth", state.token);
 
-  const decoded = decode(state.token);
-  setIsAuth(decoded);
-
-  const redirect = searchParams?.get("redirect") || "/";
-
-  router.replace(redirect);
-  router.refresh();
-}
-
-
+      // Set auth
+      const decoded = decode(state.token);
+      setIsAuth(decoded);
+    }
   }, [state?.isVerified, error, mounted, setIsAuth]);
 
-  // 🔥 FINAL REDIRECT LOGIC (THIS FIXES VERCEL ISSUE)
+  // 🔥 Wait for auth to update
   useEffect(() => {
-    if (!authLoading && isAuth) {
+    if (isAuth) {
+      setShouldRedirect(true);
+    }
+  }, [isAuth]);
+
+  // 🔥 Final redirect (NO REFRESH, WORKS ON VERCEL)
+  useEffect(() => {
+    if (shouldRedirect) {
       const redirect = searchParams?.get("redirect") || "/";
       router.replace(redirect);
     }
-  }, [isAuth, authLoading, searchParams, router]);
+  }, [shouldRedirect, searchParams, router]);
 
   const onSubmit = (data) => {
     dispatch(fetchLoginUser(data));
@@ -109,7 +112,7 @@ if (state?.isVerified) {
         className="w-full max-w-[480px] z-10"
       >
         <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[3rem] shadow-xl p-8 sm:p-12 border border-white dark:border-gray-800">
-          
+
           {/* Header */}
           <header className="text-center mb-10">
             <h1 className="text-4xl font-black text-slate-900 dark:text-white">
