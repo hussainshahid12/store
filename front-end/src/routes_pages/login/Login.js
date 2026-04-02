@@ -57,24 +57,17 @@ export default function LoginForm() {
       return;
     }
 
-    if (state?.isVerified) {
-      // 1. Save token
-      localStorage.setItem("isAuth", state.token);
+   if (state?.isVerified) {
+  localStorage.setItem("isAuth", state.token);
 
-      // 2. Decode token
-      const decoded = decode(state.token);
+  const decoded = decode(state.token);
+  setIsAuth(decoded);
 
-      // 3. Update context instantly
-      setIsAuth(decoded);
+  const redirect = searchParams?.get("redirect") || "/";
 
-      // 4. Redirect
-      const redirect = searchParams?.get("redirect") || "/";
+  router.replace(redirect);
+}
 
-      router.replace(redirect);
-
-      // 5. FORCE refresh (you want this for Vercel)
-      router.refresh();
-    }
   }, [state?.isVerified, error, mounted, searchParams, router, setIsAuth]);
 
   const onSubmit = (data) => {
