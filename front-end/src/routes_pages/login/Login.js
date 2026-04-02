@@ -13,18 +13,16 @@ import {
 } from "../../../lib/features/userSlice/user";
 import toast, { Toaster } from "react-hot-toast";
 import Loader from "@/components/loader/Loader";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { resetState as resetCart } from "../../../lib/features/cartSlice/cart";
 import { motion } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 import decode from "../../../utils/tokenDecoded/decoded";
 
 export default function LoginForm() {
-  const searchParams = useSearchParams();
   const router = useRouter();
   const dispatch = useDispatch();
-
-  const { isAuth, setIsAuth } = useAuth();
+  const { setIsAuth } = useAuth();
 
   const [mounted, setMounted] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -42,14 +40,14 @@ export default function LoginForm() {
     formState: { errors },
   } = useForm();
 
-  // 🔹 Initial setup
+  // RESET ON LOAD
   useEffect(() => {
     setMounted(true);
     dispatch(resetCart());
     dispatch(resetUser());
   }, [dispatch]);
 
-  // 🔹 Handle login success (ONLY set auth)
+  // LOGIN SUCCESS HANDLER
   useEffect(() => {
     if (!mounted) return;
 
@@ -59,29 +57,21 @@ export default function LoginForm() {
     }
 
     if (state?.isVerified) {
-      // Save token
       localStorage.setItem("isAuth", state.token);
 
-      // Set auth
       const decoded = decode(state.token);
       setIsAuth(decoded);
-    }
-  }, [state?.isVerified, error, mounted, setIsAuth]);
 
-  // 🔥 Wait for auth to update
-  useEffect(() => {
-    if (isAuth) {
       setShouldRedirect(true);
     }
-  }, [isAuth]);
+  }, [state?.isVerified, error, mounted, setIsAuth, state?.token]);
 
-  // 🔥 Final redirect (NO REFRESH, WORKS ON VERCEL)
+  // FINAL REDIRECT (ALWAYS HOME)
   useEffect(() => {
     if (shouldRedirect) {
-      const redirect = searchParams?.get("redirect") || "/";
-      router.replace(redirect);
+      router.replace("/"); // 🔥 removed return-path logic
     }
-  }, [shouldRedirect, searchParams, router]);
+  }, [shouldRedirect, router]);
 
   const onSubmit = (data) => {
     dispatch(fetchLoginUser(data));
@@ -125,18 +115,21 @@ export default function LoginForm() {
 
           {/* Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-            
-            {/* Email */}
+
+            {/* EMAIL */}
             <div>
               <div className="relative">
                 <HiMail className={iconStyle} />
                 <input
-                  {...register("email", { required: "Email is required" })}
+                  {...register("email", {
+                    required: "Email is required",
+                  })}
                   type="email"
                   placeholder="Email Address"
                   className={inputStyle}
                 />
               </div>
+
               {errors.email && (
                 <p className="text-xs text-red-500 ml-2">
                   {errors.email.message}
@@ -144,7 +137,7 @@ export default function LoginForm() {
               )}
             </div>
 
-            {/* Password */}
+            {/* PASSWORD */}
             <div>
               <div className="relative">
                 <HiLockClosed className={iconStyle} />
@@ -182,7 +175,7 @@ export default function LoginForm() {
               )}
             </div>
 
-            {/* Button */}
+            {/* BUTTON */}
             <button
               type="submit"
               className="w-full bg-primary text-white rounded-2xl py-4 font-bold text-lg hover:opacity-90 transition"
@@ -191,7 +184,7 @@ export default function LoginForm() {
             </button>
           </form>
 
-          {/* Social */}
+          {/* SOCIAL */}
           <div className="mt-10 grid grid-cols-2 gap-4">
             <button className="flex items-center justify-center gap-2 border rounded-xl py-3">
               <Image
@@ -209,14 +202,13 @@ export default function LoginForm() {
             </button>
           </div>
 
-          {/* Footer */}
+          {/* FOOTER */}
           <p className="mt-8 text-center text-sm">
             Don’t have an account?{" "}
             <Link href="/signUp" className="text-primary font-bold">
               Sign Up
             </Link>
           </p>
-
         </div>
       </motion.div>
     </section>
