@@ -19,13 +19,12 @@ const OrderHistory = () => {
   const [IsModalOpen, setIsModalOpen] = useState(false);
 
   const [activeTab, setActiveTab] = useState("All");
-  // 2. Track if the first fetch has been attempted to prevent initial "Not ordered yet" flash
-  const [hasFetched, setHasFetched] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
-      if (myOrders.length == 0) await dispatch(fetchMyOrders());
-      setHasFetched(true);
+      if (myOrders.length == 0) {
+        await dispatch(fetchMyOrders());
+      }
     };
     loadData();
   }, []);
@@ -57,7 +56,7 @@ const OrderHistory = () => {
 
   // 3. PRIORITY LOADING LOGIC
   // We show the loader if Redux says it's loading OR if we haven't finished our first fetch.
-  if (loading || !hasFetched) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <Loader />

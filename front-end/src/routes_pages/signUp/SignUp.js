@@ -106,7 +106,7 @@ export default function SignupPage() {
                 className={inputStyle}
               />
               {errors.fullName && (
-                <p className="text-[10px] text-red-500 mt-1 ml-2 font-bold uppercase">
+                <p className="text-[10px] text-red-500 mt-1 ml-2 font-bold ">
                   {errors.fullName.message}
                 </p>
               )}
@@ -122,7 +122,7 @@ export default function SignupPage() {
                 className={inputStyle}
               />
               {errors.email && (
-                <p className="text-[10px] text-red-500 mt-1 ml-2 font-bold uppercase">
+                <p className="text-[10px] text-red-500 mt-1 ml-2 font-bold ">
                   {errors.email.message}
                 </p>
               )}
@@ -133,7 +133,7 @@ export default function SignupPage() {
               <HiPhone className={iconStyle} />
               <input
                 {...register("mobileNumber", {
-                  required: "Required",
+                  required: "Number is Required",
                   minLength: { value: 11, message: "11 digits needed" },
                 })}
                 type="tel"
@@ -141,7 +141,7 @@ export default function SignupPage() {
                 className={inputStyle}
               />
               {errors.mobileNumber && (
-                <p className="text-[10px] text-red-500 mt-1 ml-2 font-bold uppercase">
+                <p className="text-[10px] text-red-500 mt-1 ml-2 font-bold ">
                   {errors.mobileNumber.message}
                 </p>
               )}
@@ -152,13 +152,18 @@ export default function SignupPage() {
               <HiLockClosed className={iconStyle} />
               <input
                 {...register("password", {
-                  required: "Required",
+                  required: "Password is Required",
                   minLength: 8,
                 })}
                 type={showPassword ? "text" : "password"}
                 placeholder="Password"
                 className={inputStyle}
               />
+              {errors.password && (
+                <p className="text-[10px] text-red-500 mt-1 ml-2 font-bold ">
+                  {errors.password.message}
+                </p>
+              )}
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
