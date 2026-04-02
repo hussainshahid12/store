@@ -21,13 +21,13 @@ import decode from "../../../utils/tokenDecoded/decoded";
 
 export default function LoginForm() {
   const searchParams = useSearchParams();
-  const { setIsAuth } = useAuth();
+  const router = useRouter();
+  const dispatch = useDispatch();
+
+  const { isAuth, setIsAuth, loading: authLoading } = useAuth();
 
   const [mounted, setMounted] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-
-  const dispatch = useDispatch();
-  const router = useRouter();
 
   const {
     userInfo: state,
@@ -41,14 +41,14 @@ export default function LoginForm() {
     formState: { errors },
   } = useForm();
 
-  // Reset states
+  // 🔹 Initial setup
   useEffect(() => {
     setMounted(true);
     dispatch(resetCart());
     dispatch(resetUser());
   }, [dispatch]);
 
-  // Handle login success
+  // 🔹 Handle login success (ONLY set auth here)
   useEffect(() => {
     if (!mounted) return;
 
@@ -57,18 +57,23 @@ export default function LoginForm() {
       return;
     }
 
-   if (state?.isVerified) {
-  localStorage.setItem("isAuth", state.token);
+    if (state?.isVerified) {
+      // Save token
+      localStorage.setItem("isAuth", state.token);
 
-  const decoded = decode(state.token);
-  setIsAuth(decoded);
+      // Decode + set auth
+      const decoded = decode(state.token);
+      setIsAuth(decoded);
+    }
+  }, [state?.isVerified, error, mounted, setIsAuth]);
 
-  const redirect = searchParams?.get("redirect") || "/";
-
-  router.replace(redirect);
-}
-
-  }, [state?.isVerified, error, mounted, searchParams, router, setIsAuth]);
+  // 🔥 FINAL REDIRECT LOGIC (THIS FIXES VERCEL ISSUE)
+  useEffect(() => {
+    if (!authLoading && isAuth) {
+      const redirect = searchParams?.get("redirect") || "/";
+      router.replace(redirect);
+    }
+  }, [isAuth, authLoading, searchParams, router]);
 
   const onSubmit = (data) => {
     dispatch(fetchLoginUser(data));
@@ -99,6 +104,7 @@ export default function LoginForm() {
         className="w-full max-w-[480px] z-10"
       >
         <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[3rem] shadow-xl p-8 sm:p-12 border border-white dark:border-gray-800">
+          
           {/* Header */}
           <header className="text-center mb-10">
             <h1 className="text-4xl font-black text-slate-900 dark:text-white">
@@ -111,6 +117,7 @@ export default function LoginForm() {
 
           {/* Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            
             {/* Email */}
             <div>
               <div className="relative">
@@ -141,6 +148,7 @@ export default function LoginForm() {
                   placeholder="Password"
                   className={inputStyle}
                 />
+
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
@@ -200,6 +208,7 @@ export default function LoginForm() {
               Sign Up
             </Link>
           </p>
+
         </div>
       </motion.div>
     </section>
