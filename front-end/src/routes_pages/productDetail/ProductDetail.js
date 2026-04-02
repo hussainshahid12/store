@@ -106,12 +106,16 @@ export default function ProductDetail({ slug }) {
     window.dispatchEvent(new Event("cart-item-added"));
   };
 
-  const handleBuyNow = () => {
-    const token = decode();
-    if (!token?.id) {
+  const handleBuyNow = async (item) => {
+    const token = localStorage.getItem("isAuth");
+    const decoded = decode(token);
+    if (!decoded?.id) {
       setShowLoginPrompt(true); // Triggers the Login Modal
       return;
     }
+    const { _id: productId } = item;
+    const selectedQuantity = Number(quantity);
+    await dispatch(fetchAddItem({ productId, quantity: selectedQuantity }));
     router.push("/checkout");
   };
 
@@ -326,7 +330,7 @@ export default function ProductDetail({ slug }) {
 
               {/* Buy Now (Triggers Login Logic) */}
               <button
-                onClick={handleBuyNow}
+                onClick={() => handleBuyNow(product)}
                 className="w-full bg-primary text-white h-14 rounded-2xl font-bold uppercase tracking-widest text-[11px] lg:text-xs transition-all active:scale-95 shadow-lg shadow-gray-200"
               >
                 Buy Now — ${totalPrice}
