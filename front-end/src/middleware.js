@@ -9,31 +9,25 @@ export function middleware(request) {
     "/forgot-password",
     "/verify_otp",
     "/resend_otp",
-    "/cart",
   ];
 
   const isAuth = request.cookies.get("JWT_Token");
-  console.log(isAuth);
 
-  // If logged in and trying to access public page → redirect home
+  // If logged in → block auth pages
   if (isAuth && publicRoutes.includes(path)) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
-  // If not logged in → redirect with return path
+  // If NOT logged in → block protected pages
   if (!isAuth && !publicRoutes.includes(path)) {
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("redirect", path);
-    return NextResponse.redirect(loginUrl);
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  //   matcher: ["/((?!_next|api|favicon.ico).*)"],   middleWare function all reoutes this method
   matcher: [
-    // "/product/:path*",
     "/login",
     "/signUp",
     "/category/:path*",
