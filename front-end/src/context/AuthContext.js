@@ -14,9 +14,16 @@ export const AuthProvider = ({ children }) => {
 
     if (token) {
       const decoded = decode(token);
+
       if (decoded) {
         setIsAuth(decoded);
+      } else {
+        // invalid token → remove
+        localStorage.removeItem("isAuth");
+        setIsAuth(null);
       }
+    } else {
+      setIsAuth(null);
     }
 
     setLoading(false);
