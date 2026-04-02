@@ -57,14 +57,19 @@ export default function LoginForm() {
       return;
     }
 
-    if (state?.isVerified) {
-      // Save token
-      localStorage.setItem("isAuth", state.token);
+if (state?.isVerified) {
+  localStorage.setItem("isAuth", state.token);
 
-      // Decode + set auth
-      const decoded = decode(state.token);
-      setIsAuth(decoded);
-    }
+  const decoded = decode(state.token);
+  setIsAuth(decoded);
+
+  const redirect = searchParams?.get("redirect") || "/";
+
+  router.replace(redirect);
+  router.refresh();
+}
+
+
   }, [state?.isVerified, error, mounted, setIsAuth]);
 
   // 🔥 FINAL REDIRECT LOGIC (THIS FIXES VERCEL ISSUE)
