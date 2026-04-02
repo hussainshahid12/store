@@ -73,7 +73,7 @@ export default function LoginForm() {
       router.replace(redirect);
 
       // 5. FORCE refresh (you want this for Vercel)
-      // router.refresh();
+      router.refresh();
     }
   }, [state?.isVerified, error, mounted, searchParams, router, setIsAuth]);
 
