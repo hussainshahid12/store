@@ -6,10 +6,22 @@ const BASE_URL = isProduction
 
 export const api = axios.create({
   baseURL: BASE_URL,
-
   withCredentials: true, //  important for cookies
   headers: {
     "Content-Type": "application/json",
-     Authorization: `Bearer ${localStorage.getItem("token")}`,
   },
 });
+
+// Add a request interceptor to set Authorization header on client side only
+if (typeof window !== "undefined") {
+  api.interceptors.request.use(
+    (config) => {
+      const token = localStorage.getItem("token");
+      if (token) {
+        config.headers["Authorization"] = `Bearer ${token}`;
+      }
+      return config;
+    },
+    (error) => Promise.reject(error)
+  );
+}
