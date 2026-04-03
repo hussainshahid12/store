@@ -10,5 +10,6 @@ export const api = axios.create({
   withCredentials: true, //  important for cookies
   headers: {
     "Content-Type": "application/json",
+     Authorization: `Bearer ${localStorage.getItem("token")}`,
   },
 });
