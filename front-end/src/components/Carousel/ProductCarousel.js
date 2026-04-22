@@ -1,6 +1,7 @@
 "use client";
 import React, { useRef, memo, useState } from "react";
 import QuickViewModal from "../itemModal/QuickViewModal";
+import { FiPlus } from "react-icons/fi";
 
 const ProductCarousel = ({
   title,
@@ -145,7 +146,15 @@ const ProductCarousel = ({
                     >
                       Quick Add
                     </button>
+                    
                   </div>
+                  {/* Plus Button (Mobile/Tablet) */}
+                    <button
+                      onClick={() => setSelectedProduct(product)}
+                      className="lg:hidden absolute bottom-2 right-2 z-20 w-8 h-8 bg-black text-white rounded-full flex items-center justify-center shadow-lg active:scale-90"
+                    >
+                      <FiPlus size={16} strokeWidth={3} />
+                    </button>
                 </div>
 
                 {/* INFO AREA */}
