@@ -161,8 +161,8 @@ export default function ProductListing() {
               <FiShoppingBag />
               <span>Premium Marketplace</span>
             </div>
-            <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tight">
-              Featured Products<span className="text-primary">.</span>
+            <h1 className="text-2xl md:text-3xl font-black text-gray-900 uppercase tracking-tighter">
+              Featured Products
             </h1>
           </div>
 

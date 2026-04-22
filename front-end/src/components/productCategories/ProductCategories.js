@@ -53,11 +53,11 @@ const ProductCategories = () => {
 
   return (
     <section className="py-16 bg-gray-50/50 dark:bg-gray-950 overflow-hidden">
-      <div className="max-w-screen-xl mx-auto px-6 mb-10 flex flex-col items-center">
-        <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4 tracking-tight">
-          Shop by <span className="text-primary ">Category</span>
+      <div className="max-w-screen-xl mx-auto px-6 mb-10 flex flex-col ">
+        <h2 className="text-2xl md:text-3xl font-black text-gray-900 uppercase tracking-tighter">
+          Category
         </h2>
-        <div className="h-1 w-20 bg-primary rounded-full" />
+        {/* <div className="h-1 w-20 bg-primary rounded-full" /> */}
       </div>
 
       {/* Modern Scrolling Container */}

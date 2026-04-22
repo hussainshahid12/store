@@ -13,6 +13,12 @@ export const getProductsService = async (pageNo, order) => {
   return response.data;
 };
 
+export const getTagProductsService = async (tag) => {
+  let url = `/api/product/tags?tags=${tag}`;
+  const response = await api.get(url);
+  return response.data;
+};
+
 export const getProductCountService = async (countFlage, category) => {
   let url = `/api/product/getProductCount`;
   if (countFlage && category) {
@@ -49,10 +55,3 @@ export const getSearchproductService = async (query) => {
   const response = await api.get(url);
   return response.data;
 };
-
-
-
-
-
-
-

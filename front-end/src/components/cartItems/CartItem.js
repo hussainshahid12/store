@@ -36,7 +36,7 @@ const CartItem = ({
       ).unwrap();
     } catch (error) {
       toast.error("Update failed");
-      setQty((prev) => ({ ...prev, [productId]: currentQty })); 
+      setQty((prev) => ({ ...prev, [productId]: currentQty }));
     } finally {
       setUpdatingId(null);
     }

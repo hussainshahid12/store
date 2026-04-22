@@ -68,28 +68,47 @@ class UserAccount {
     const { email, password } = req.body;
 
     try {
+      // ================= FIND USER =================
       const existUser = await User.findOne({ email });
 
       if (!existUser) {
         return res.status(404).json({ message: "Email not found" });
       }
 
-      const isAuth = bcrypt.compareSync(password, existUser.password);
+      // ================= PASSWORD CHECK =================
+      const isAuth = await bcrypt.compare(password, existUser.password);
 
       if (!isAuth) {
         return res.status(401).json({ message: "Password not matched" });
       }
 
-      // token sign
+      // ================= OPTIONAL: VERIFY CHECK =================
+      // if (!existUser.isVerified) {
+      //   return res.status(403).json({ message: "Please verify your account" });
+      // }
+
+      // ================= TOKEN =================
       const token = JWTTokenSign(existUser);
 
+      // ================= COOKIE =================
       res.cookie("JWT_Token", token, {
+        httpOnly: true,
+        secure: isProduction, // HTTPS required in production
+        sameSite: isProduction ? "none" : "lax",
+        path: "/",
+        // maxAge: 1000 * 60 * 60 * 24 * 7, // ✅ 7 days
+      });
+
+      // ================= IMPORTANT FOR CART =================
+      res.cookie("lastUserId", existUser._id.toString(), {
         httpOnly: true,
         secure: isProduction,
         sameSite: isProduction ? "none" : "lax",
         path: "/",
+        maxAge: 1000 * 60 * 60 * 24 * 30,
       });
 
+      // ================= RESPONSE =================
       return res.status(200).json({
         message: "Login successfully",
         token,

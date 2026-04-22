@@ -9,7 +9,7 @@ export const Auth = (req, res, next) => {
 
     if (!token) {
       console.log("token failed");
-      return res.status(401).json({ message: "No token" });
+      return res.status(401).json({ message: "No token.." });
     }
 
     const decoded = Jwt.verify(token, process.env.JWT_SECURITY);

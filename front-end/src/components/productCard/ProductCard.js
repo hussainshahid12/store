@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useState } from "react";
 import Link from "next/link";
 import { FaStar } from "react-icons/fa";
 import { FiPlus } from "react-icons/fi";
@@ -7,19 +7,13 @@ import Image from "next/image";
 const PLACEHOLDER_IMAGE = "/placeholder.png";
 
 const ProductCard = memo(({ product, onOpenPopup }) => {
-  const imageSrc =
-    product.thumbnail &&
-    typeof product.thumbnail === "string" &&
-    product.thumbnail.trim() !== ""
-      ? product.thumbnail
-      : PLACEHOLDER_IMAGE;
+  const [isLoaded, setIsLoaded] = useState(false);
 
-  // Formatting URL for the detail page
+  const imageSrc = product.thumbnail || PLACEHOLDER_IMAGE;
+
+  // Professional URL Slug
   const productUrl = `/product/${product._id}/${
-    product.description
-      ?.toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "") || "view-product"
+    product.title?.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "view"
   }`;
 
   const originalPrice =
@@ -28,101 +22,112 @@ const ProductCard = memo(({ product, onOpenPopup }) => {
       : null;
 
   return (
-    <div className="group relative bg-white dark:bg-slate-900 rounded-[1rem] border border-slate-100 dark:border-slate-800 p-2 md:p-3 transition-all duration-500 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] hover:-translate-y-2 overflow-hidden flex flex-col h-full">
-      {/* GLOBAL LINK: Makes entire card clickable */}
-      <Link
-        href={productUrl}
-        className="absolute inset-0 z-10"
-        aria-label={product.title}
-      />
+    <div className="group flex flex-col snap-start bg-white dark:bg-slate-900 transition-all duration-300 h-full">
+      {/* 1. IMAGE AREA - Updated to match New Arrival aspect ratio and background */}
+      <div className="relative aspect-[1/1.2] bg-[#F3F4F6] dark:bg-slate-800 rounded-2xl overflow-hidden flex items-center justify-center p-4 transition-all">
+        <Link href={productUrl} className="absolute inset-0 z-10" />
 
-      {/* Image Container */}
-      <div className="relative w-full aspect-square bg-slate-50 dark:bg-slate-800/40 rounded-[1rem] overflow-hidden pointer-events-none">
+        {/* Badge Container */}
+        <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 z-20">
+          {product.discountPercentage > 0 && (
+            <span className="bg-red-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow-sm w-fit">
+              -{Math.round(product.discountPercentage)}%
+            </span>
+          )}
+          {product.isTopSeller && (
+            <span className="bg-orange-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow-sm w-fit uppercase tracking-tighter">
+              Top Seller
+            </span>
+          )}
+          {product.isNew && !product.isTopSeller && (
+            <span className="bg-blue-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow-sm w-fit uppercase tracking-tighter">
+              New
+            </span>
+          )}
+        </div>
+
         <Image
           src={imageSrc}
           alt={product.title || "Product Image"}
           fill
           sizes="(max-width: 768px) 50vw, 20vw"
-          className="object-contain p-6 transition-transform duration-700 group-hover:scale-110"
-          priority={false}
+          className={`object-contain p-4 transition-all duration-700 ease-in-out ${
+            isLoaded ? "scale-100 opacity-100" : "scale-105 opacity-0"
+          } group-hover:scale-105`}
+          onLoadingComplete={() => setIsLoaded(true)}
         />
 
-        {/* Floating Badges Container */}
-        <div className="absolute top-3 left-3 flex flex-col items-start gap-1.5 z-20">
-          {/* BEST SELLER BADGE */}
-          {product.rating >= 4.5 && (
-            <div className="bg-emerald-500 text-white text-[9px] md:text-[10px] font-black px-3 py-1 rounded-full shadow-lg uppercase tracking-wider">
-              Best Seller
-            </div>
-          )}
-
-          {/* DISCOUNT BADGE */}
-          {product.discountPercentage > 0 && (
-            <span className="bg-primary text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider shadow-sm">
-              {Math.round(product.discountPercentage)}% OFF
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Content Section */}
-      <div className="px-2 md:px-3 pt-4 pb-2 flex flex-col flex-grow relative z-20 pointer-events-none">
-        <div>
-          <p className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-1 truncate">
-            {product.category || "Collection 2024"}
-          </p>
-
-          <h2 className="text-slate-800 dark:text-slate-100 text-sm md:text-base font-bold leading-tight line-clamp-2 mb-2 group-hover:text-primary transition-colors">
-            {product.title}
-          </h2>
-
-          <div className="flex items-center gap-1.5 mb-3">
-            <div className="flex text-yellow-400 text-[10px]">
-              {[...Array(5)].map((_, i) => (
-                <FaStar
-                  key={i}
-                  className={
-                    i < Math.round(product.rating || 0)
-                      ? "fill-current"
-                      : "text-slate-200 dark:text-slate-700"
-                  }
-                />
-              ))}
-            </div>
-            <span className="text-[10px] md:text-[11px] font-bold text-slate-400">
-              {product.rating?.toFixed(1) || "0.0"}
-            </span>
-          </div>
-        </div>
-
-        {/* Pricing & Add Button Row */}
-        <div className="flex items-center justify-between mt-auto pt-2 pointer-events-auto">
-          <div className="flex flex-col">
-            {originalPrice && (
-              <span className="text-[10px] md:text-xs text-slate-400 line-through leading-none mb-1">
-                ${originalPrice}
-              </span>
-            )}
-            <p className="text-base md:text-xl font-black text-slate-900 dark:text-white leading-none">
-              ${product.price}
-            </p>
-          </div>
-
-          {/* <button
+        {/* Quick Add Overlay (Desktop) - Consistent with New Arrival slide-up */}
+        <div className="absolute inset-x-2 bottom-2 z-30 translate-y-12 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 hidden lg:block">
+          <button
             onClick={(e) => {
-              e.preventDefault(); // Prevents page navigation
-              e.stopPropagation(); // Prevents click bubbling
+              e.preventDefault();
               onOpenPopup(product);
             }}
-            className="cursor-pointer h-9 w-9 md:h-11 md:w-11 bg-primary hover:bg-slate-900 dark:hover:bg-primary text-white rounded-xl md:rounded-2xl flex items-center justify-center transition-all duration-300 shadow-lg active:scale-90"
-            aria-label="Add to cart"
+            className="w-full bg-white/95 backdrop-blur-sm text-black py-2 rounded-lg font-bold text-[10px] uppercase shadow-md hover:bg-black hover:text-white transition-colors flex items-center justify-center gap-1"
           >
-            <FiPlus size={18} strokeWidth={3} className="md:w-5 md:h-5" />
-          </button> */}
+            <FiPlus size={12} /> Quick Add
+          </button>
+        </div>
+
+        {/* Plus Button (Mobile/Tablet) */}
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            onOpenPopup(product);
+          }}
+          className="lg:hidden absolute bottom-2 right-2 z-20 w-8 h-8 bg-black text-white rounded-full flex items-center justify-center shadow-lg active:scale-90"
+        >
+          <FiPlus size={16} strokeWidth={3} />
+        </button>
+      </div>
+
+      {/* 2. INFO AREA - Streamlined for 6-item grid */}
+      <div className="mt-3 flex flex-col flex-grow px-1">
+        <span className="text-[9px] text-slate-400 dark:text-slate-500 uppercase font-black tracking-widest truncate">
+          {product.brand || product.category || "ESSENTIALS"}
+        </span>
+
+        <h3 className="text-[13px] font-bold text-slate-900 dark:text-white leading-tight line-clamp-1 mb-1">
+          {product.title}
+        </h3>
+
+        {/* 5-Star Rating - Compact style */}
+        <div className="flex items-center gap-1 mb-2">
+          <div className="flex text-yellow-400">
+            {[...Array(5)].map((_, i) => (
+              <FaStar
+                key={i}
+                size={10}
+                className={
+                  i < Math.floor(product.rating || 0)
+                    ? "fill-current"
+                    : "text-slate-200 dark:text-slate-700"
+                }
+              />
+            ))}
+          </div>
+          <span className="text-[9px] text-slate-400 font-bold">
+            ({product.rating?.toFixed(1)})
+          </span>
+        </div>
+
+        {/* Price Section */}
+        <div className="flex items-center gap-2 mt-auto">
+          <span className="text-sm font-black text-slate-900 dark:text-white">
+            ${product.price}
+          </span>
+          {originalPrice && (
+            <span className="text-[10px] text-slate-400 line-through font-medium">
+              ${originalPrice}
+            </span>
+          )}
         </div>
       </div>
     </div>
   );
 });
+
+ProductCard.displayName = "ProductCard";
 
 export default ProductCard;

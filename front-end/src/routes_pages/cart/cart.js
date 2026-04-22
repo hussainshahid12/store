@@ -51,7 +51,7 @@ export default function CartPage() {
   const totalWithTax = (finalPrice + tax).toFixed(2);
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] py-6 md:py-12 font-sans text-slate-900">
+    <div className="min-h-screen bg-[#f8fafc] py-6 md:py-12 font-sans text-slate-900 mt-[150px] ">
       <div className="max-w-7xl mx-auto px-4 lg:px-8">
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 md:mb-12 gap-2">

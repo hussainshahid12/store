@@ -16,7 +16,7 @@ const app = express();
 connectDB();
 
 // 🔥 PUT IT HERE (VERY TOP)
-app.set("trust proxy", 1);
+// app.set("trust proxy", 1);
 
 // ================= CORS =================
 const allowedOrigins = [

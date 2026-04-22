@@ -115,8 +115,10 @@ export default function ProductDetail({ slug }) {
     }
     const { _id: productId } = item;
     const selectedQuantity = Number(quantity);
-    await dispatch(fetchAddItem({ productId, quantity: selectedQuantity }));
-    router.push("/checkout");
+
+    router.push(
+      `/checkout?mode=buy-now&productId=${productId}&quantity=${selectedQuantity}`,
+    );
   };
 
   if (!product) {
@@ -137,7 +139,7 @@ export default function ProductDetail({ slug }) {
     : "N/A";
 
   return (
-    <div className="bg-white min-h-screen  font-sans text-[#1d1d1f]">
+    <div className="bg-white min-h-screen  font-sans text-[#1d1d1f] mt-[150px]">
       {loading && <Loader />}
       <Toaster position="top-center" />
 

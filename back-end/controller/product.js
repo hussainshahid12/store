@@ -151,6 +151,37 @@ class Product {
       res.status(500).json({ message: error.message });
     }
   };
+
+  static async getTagsProducts(req, res) {
+    try {
+      const { tags } = req.query;
+
+      if (!tags) {
+        return res.json({
+          result: [],
+          message: "No tags provided",
+          status: true,
+        });
+      }
+
+      const tagArray = tags.split(",");
+
+      const result = await product
+        .find({
+          tags: { $in: tagArray },
+        })
+        .sort({ id: -1 })
+        .limit(31);
+
+      res.json({
+        result,
+        message: "Get tags products successfully",
+        status: true,
+      });
+    } catch (err) {
+      customErrorHandler({ status: 404, message: err.message }, req, res);
+    }
+  }
 }
 
 export default Product;
