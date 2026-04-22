@@ -5,7 +5,8 @@ import {
   getALLCategoryService,
   getFilterCategoryService,
   getProductDetailService,
-  getSearchproductService
+  getSearchproductService,
+  getTagProductsService,
 } from "@/services/productService";
 
 export const fetchGetProducts = createAsyncThunk(
@@ -13,6 +14,18 @@ export const fetchGetProducts = createAsyncThunk(
   async ({ currentPage, order }, { rejectWithValue }) => {
     try {
       return await getProductsService(currentPage, order);
+    } catch (err) {
+      // axios error handling
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  },
+);
+
+export const fetchTagProducts = createAsyncThunk(
+  "product/fetchTagProducts",
+  async (tag, { rejectWithValue }) => {
+    try {
+      return await getTagProductsService(tag);
     } catch (err) {
       // axios error handling
       return rejectWithValue(err.response?.data?.message || err.message);
@@ -87,6 +100,10 @@ export const fetchSearchProduct = createAsyncThunk(
 
 const initialState = {
   items: [],
+  tagProducts: {
+    new_arrivals:[],
+    trending:[]
+  },
   searchItems: [], // empty array so you can safely map over it
   totalProducts: 0, // start at 0
   error: null, // no error initially
@@ -122,6 +139,19 @@ const productSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchGetProducts.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+      })
+      .addCase(fetchTagProducts.pending, (state, action) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchTagProducts.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.tagProducts.new_arrivals = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchTagProducts.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
       })

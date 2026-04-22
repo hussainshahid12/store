@@ -16,6 +16,11 @@ const productSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    tags: {
+      type: [String],
+      enum: ["Best Seller", "Gift Ideas", "Today's Deals", "New Arrivals"],
+      default: [],
+    },
 
     price: {
       type: Number,
@@ -77,7 +82,7 @@ const productSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum:["active", "inactive"],
+      enum: ["active", "inactive"],
       default: "active",
     },
     images: {
@@ -88,8 +93,8 @@ const productSchema = new mongoose.Schema(
       type: String,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-let product= mongoose.model("Product", productSchema);
-export default product
+let product = mongoose.model("Product", productSchema);
+export default product;

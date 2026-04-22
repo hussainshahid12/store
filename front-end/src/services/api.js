@@ -2,7 +2,7 @@ import axios from "axios";
 const isProduction = process.env.NODE_ENV === "production";
 const BASE_URL = isProduction
   ? process.env.NEXT_PUBLIC_API_URL
-  : "http://192.168.0.107:2000";
+  : "http://192.168.0.106:2000";
 
 export const api = axios.create({
   baseURL: BASE_URL,

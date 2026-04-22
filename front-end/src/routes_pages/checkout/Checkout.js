@@ -1,65 +1,69 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import {
   HiOutlineChevronLeft,
   HiOutlineShieldCheck,
   HiOutlineCreditCard,
   HiOutlineCash,
-  HiLockClosed,
   HiExclamationCircle,
+  HiOutlineTruck,
 } from "react-icons/hi";
 import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import {
+  fetchBuyNowItem,
   fetchCreateOrder,
   fetchMyOrderAddress,
 } from "../../../lib/features/orderSlice/orderSlice";
 import { fetchCartItems } from "../../../lib/features/cartSlice/cart";
 import Loader from "@/components/loader/Loader";
+import Footer from "@/components/footer/Footer";
+import CheckoutSkeleton from "@/components/skeletonLoader/CheckoutSkeleton";
 
 export default function Checkout() {
   const router = useRouter();
   const dispatch = useDispatch();
 
-  // 1. Redux State
-  const cartItems = useSelector(
-    (state) => state?.cartSlice?.items?.cart?.items || [],
-  );
+  // Redux State
+  const orderData = useSelector((state) => state?.orderSlice.order);
   const cartData = useSelector((state) => state?.cartSlice?.items?.cart || {});
-  const loading = useSelector((state) => state?.cartSlice?.isLoading);
-  const savedAddresses = useSelector((state) => state?.orderSlice.address);
+  const cartItems = cartData?.items || [];
+  const isOrderLoading = useSelector((state) => state?.orderSlice.isLoading);
+  const isCartLoading = useSelector((state) => state?.cartSlice?.isLoading);
+  const savedAddresses = useSelector(
+    (state) => state?.orderSlice.address || [],
+  );
 
-  const [paymentMethod, setPaymentMethod] = useState(null);
+  const displayItems =
+    orderData?.items?.length > 0 ? orderData.items : cartItems;
+  const displayTotals = orderData?.items?.length > 0 ? orderData : cartData;
+
   const [selectedAddressIndex, setSelectedAddressIndex] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (savedAddresses.length === 0) dispatch(fetchMyOrderAddress());
-  }, []);
-
-  // Replace your existing useEffects with this one:
-  useEffect(() => {
-    const initializeCheckout = async () => {
-      if (cartItems.length === 0) {
-        const result = await dispatch(fetchCartItems());
-        const items = result.payload?.cart?.items || [];
-        if (items.length === 0) {
-          router.replace("/");
-        }
-      }
-    };
-
-    initializeCheckout();
-  }, [dispatch, router]);
+  // Memoize unique addresses
+  const uniqueAddresses = useMemo(() => {
+    return savedAddresses.filter(
+      (item, index, self) =>
+        index ===
+        self.findIndex(
+          (t) =>
+            (t.address?.address || t.address) ===
+              (item.address?.address || item.address) &&
+            t.address?.city === item.address?.city,
+        ),
+    );
+  }, [savedAddresses]);
 
   const {
     register,
     handleSubmit,
     setValue,
     trigger,
+    watch,
     formState: { errors },
   } = useForm({
     defaultValues: {
@@ -75,52 +79,73 @@ export default function Checkout() {
     },
   });
 
-  const handleSelectAddress = (index) => {
-    setSelectedAddressIndex(index);
-    const selected = savedAddresses[index];
+  const selectedPayment = watch("paymentMethod");
 
-    // Check if 'selected.address' exists or if the keys are directly on 'selected'
-    // Based on your JSX: item.address.firstName, the structure is selected.address
-    const data = selected.address || selected;
+  useEffect(() => {
+    if (savedAddresses.length === 0) dispatch(fetchMyOrderAddress());
+  }, [dispatch, savedAddresses.length]);
 
-    // Update form values with the correct keys from your saved profile
+  useEffect(() => {
+    const initializeCheckout = async () => {
+      const params = new URLSearchParams(window.location.search);
+      const mode = params.get("mode");
+      const productId = params.get("productId");
+      const quantity = params.get("quantity");
+
+      if (mode === "buy-now") {
+        if (!productId) return router.replace("/");
+        dispatch(fetchBuyNowItem({ id: productId, qty: quantity }));
+      } else {
+        if (cartItems.length === 0) {
+          const result = await dispatch(fetchCartItems());
+          const items = result.payload?.cart?.items || [];
+          if (items.length === 0) router.replace("/");
+        }
+      }
+    };
+    initializeCheckout();
+  }, [dispatch, router]);
+
+  const handleSelectAddress = (item) => {
+    const originalIndex = savedAddresses.indexOf(item);
+    setSelectedAddressIndex(originalIndex);
+
+    const data = item.address || item;
     setValue("address.firstName", data.firstName || data.first);
     setValue("address.lastName", data.lastName || data.last);
     setValue("address.address", data.address || data.full);
     setValue("address.city", data.city);
     setValue("address.phone", data.phone);
     setValue("address.email", data.email);
-
-    // This tells react-hook-form to clear the "Required" errors
-    // now that the fields have values
     trigger("address");
   };
 
-  const handlePaymentSelect = (method) => {
-    setPaymentMethod(method);
-    setValue("paymentMethod", method, { shouldValidate: true });
-  };
-
   const onPlaceOrder = async (data) => {
+    const params = new URLSearchParams(window.location.search);
+    const mode = params.get("mode") || "cart";
+    const productId = params.get("productId");
+    const quantity = params.get("quantity");
+
     setIsSubmitting(true);
-    // Include cart items and total in order data
-    const orderData = {
-      ...data,
-      items: cartItems,
-      total: cartData?.finalPrice,
+
+    const orderPayload = {
+      address: data.address,
+      paymentMethod: data.paymentMethod,
+      productId: mode === "buy-now" ? productId : undefined,
+      quantity: mode === "buy-now" ? quantity : undefined,
+      mode,
     };
 
-    let res = await dispatch(fetchCreateOrder(orderData));
-   
+    console.log("wow", orderPayload);
+    let res = await dispatch(fetchCreateOrder(orderPayload));
+
     if (res.meta.requestStatus === "fulfilled") {
       const audio = new Audio(
         "https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3",
       );
       try {
         await audio.play();
-      } catch (err) {
-        console.error("Audio play blocked");
-      }
+      } catch (err) {}
 
       setTimeout(() => {
         setIsSubmitting(false);
@@ -128,355 +153,399 @@ export default function Checkout() {
       }, 2000);
     } else {
       setIsSubmitting(false);
+      console.error("Order Failed:", res.payload);
     }
   };
 
-  const ErrorMsg = ({ message }) =>
-    message ? (
-      <p className="flex items-center gap-1 mt-1.5 text-[11px] font-bold text-red-600">
-        <HiExclamationCircle className="w-3.5 h-3.5" /> {message}
-      </p>
-    ) : null;
+  // if (isOrderLoading || isCartLoading) return <Loader />;
+  if (isOrderLoading || isCartLoading) return <CheckoutSkeleton />;
 
-  // PRIORITY 1: Show loader while fetching
-  if (loading) {
-    return <Loader />;
-  }
+  if (displayItems.length === 0) return null;
 
-  // PRIORITY 2: Prevent UI flash if cart is empty (useEffect handles the redirect)
-  if (cartItems.length === 0) {
-    return null;
-  }
+  const inputStyles = (error) => `
+    w-full px-4 py-3 rounded-xl border transition-all duration-200 outline-none text-sm
+    ${error ? "border-red-500 bg-red-50/30" : "border-gray-200 focus:border-black focus:ring-4 focus:ring-gray-100"}
+  `;
 
+  const backHandler = () => {
+    router.back();
+  };
   return (
-    <div className="min-h-screen bg-[#f8f9fa] text-[#1a1a1a] antialiased font-sans">
-      <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-        <Link
-          href="/cart"
-          className="group mb-8 inline-flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-black transition-colors"
-        >
-          <HiOutlineChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-          Back to bag
-        </Link>
-
-        <form
-          onSubmit={handleSubmit(onPlaceOrder)}
-          className="grid grid-cols-1 gap-12 lg:grid-cols-12"
-        >
-          <div className="lg:col-span-8 space-y-8">
-            <header>
-              <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-                Checkout
+    <>
+      <div className="min-h-screen bg-white text-slate-900 px-2 lg:px-10">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 lg:py-16">
+          <div className="flex justify-between items-center mb-12">
+            <div>
+              <div
+                className="cursor-pointer group  inline-flex items-center gap-2 text-sm font-medium text-gray-400 hover:text-black transition-colors"
+                onClick={backHandler}
+              >
+                <HiOutlineChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />{" "}
+                Back
+              </div>
+              <h1 className="text-4xl font-bold mt-4 tracking-tight">
+                Checkout.
               </h1>
-              <p className="text-gray-500 mt-1 text-sm font-medium">
-                Complete your purchase by providing your payment and shipping
-                details.
-              </p>
-            </header>
-
-            {/* SECTION 1: SHIPPING ADDRESS */}
-            <section className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
-              <div className="flex items-center gap-3 mb-8">
-                <span className="bg-black text-white w-6 h-6 rounded flex items-center justify-center text-[11px] font-bold">
-                  01
-                </span>
-                <h2 className="text-lg font-bold uppercase tracking-wider text-gray-800">
-                  Shipping Details
-                </h2>
-              </div>
-
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2 tracking-wide">
-                    First Name
-                  </label>
-                  <input
-                    {...register("address.firstName", { required: "Required" })}
-                    className={`w-full p-3.5 rounded-lg border outline-none transition-all font-medium text-sm ${errors.address?.firstName ? "border-red-500 bg-red-50/20" : "border-gray-200 focus:border-black"}`}
-                    placeholder="Hussain"
-                  />
-                  <ErrorMsg message={errors.address?.firstName?.message} />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2 tracking-wide">
-                    Last Name
-                  </label>
-                  <input
-                    {...register("address.lastName", { required: "Required" })}
-                    className={`w-full p-3.5 rounded-lg border outline-none transition-all font-medium text-sm ${errors.address?.lastName ? "border-red-500 bg-red-50/20" : "border-gray-200 focus:border-black"}`}
-                    placeholder="Shahid"
-                  />
-                  <ErrorMsg message={errors.address?.lastName?.message} />
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2 tracking-wide">
-                    Email Address
-                  </label>
-                  <input
-                    {...register("address.email", {
-                      required: "Required",
-                      pattern: {
-                        value: /^\S+@\S+$/i,
-                        message: "Invalid email",
-                      },
-                    })}
-                    className={`w-full p-3.5 rounded-lg border outline-none transition-all font-medium text-sm ${errors.address?.email ? "border-red-500 bg-red-50/20" : "border-gray-200 focus:border-black"}`}
-                    placeholder="hussain@example.com"
-                  />
-                  <ErrorMsg message={errors.address?.email?.message} />
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2 tracking-wide">
-                    Phone Number
-                  </label>
-                  <input
-                    {...register("address.phone", {
-                      required: "Required",
-                      pattern: {
-                        value: /^[0-9]{10,14}$/,
-                        message: "10-14 digits",
-                      },
-                    })}
-                    className={`w-full p-3.5 rounded-lg border outline-none transition-all font-medium text-sm ${errors.address?.phone ? "border-red-500 bg-red-50/20" : "border-gray-200 focus:border-black"}`}
-                    placeholder="03001234567"
-                  />
-                  <ErrorMsg message={errors.address?.phone?.message} />
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2 tracking-wide">
-                    Street Address
-                  </label>
-                  <input
-                    {...register("address.address", { required: "Required" })}
-                    className={`w-full p-3.5 rounded-lg border outline-none transition-all font-medium text-sm ${errors.address?.address ? "border-red-500 bg-red-50/20" : "border-gray-200 focus:border-black"}`}
-                    placeholder="Office 402, Business Square"
-                  />
-                  <ErrorMsg message={errors.address?.address?.message} />
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2 tracking-wide">
-                    City
-                  </label>
-                  <input
-                    {...register("address.city", { required: "Required" })}
-                    className={`w-full p-3.5 rounded-lg border outline-none transition-all font-medium text-sm ${errors.address?.city ? "border-red-500 bg-red-50/20" : "border-gray-200 focus:border-black"}`}
-                    placeholder="Lahore"
-                  />
-                  <ErrorMsg message={errors.address?.city?.message} />
-                </div>
-              </div>
-              {/* SECTION 1: SHIPPING ADDRESS */}
-              {/* ... inside your component ... */}
-
-              {savedAddresses.length > 0 && (
-                <div className="mt-8 pt-6 border-t border-gray-100">
-                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.15em] mb-4">
-                    Saved Profiles
-                  </p>
-                  <div className="flex flex-wrap gap-3">
-                    {/* 1. Filter for unique addresses based on Street and City */}
-                    {savedAddresses
-                      .filter(
-                        (item, index, self) =>
-                          index ===
-                          self.findIndex(
-                            (t) =>
-                              t.address.address === item.address.address &&
-                              t.address.city === item.address.city,
-                          ),
-                      )
-                      // 2. Map the unique list
-                      .map((item, i) => (
-                        <button
-                          key={i}
-                          type="button"
-                          onClick={() => handleSelectAddress(i)}
-                          className={`text-[10px] px-4 py-2 rounded border-2 font-bold uppercase tracking-wide transition-all ${
-                            selectedAddressIndex === i
-                              ? "border-black bg-black text-white"
-                              : "border-gray-100 bg-gray-50 text-gray-400 hover:border-gray-300"
-                          }`}
-                        >
-                          {item.address.firstName} — {item.address.city}
-                        </button>
-                      ))}
-                  </div>
-                </div>
-              )}
-            </section>
-
-            {/* SECTION 2: PAYMENT METHOD */}
-            <section className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
-              <div className="flex items-center gap-3 mb-8">
-                <span className="bg-black text-white w-6 h-6 rounded flex items-center justify-center text-[11px] font-bold">
-                  02
-                </span>
-                <h2 className="text-lg font-bold uppercase tracking-wider text-gray-800">
-                  Payment Method
-                </h2>
-              </div>
-
-              <input
-                type="hidden"
-                {...register("paymentMethod", {
-                  required: "Select a payment option",
-                })}
-              />
-
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <button
-                  type="button"
-                  onClick={() => handlePaymentSelect("Cash")}
-                  className={`flex items-center gap-4 rounded-xl border-2 p-5 transition-all ${paymentMethod === "Cash" ? "border-black bg-gray-50 text-black shadow-sm" : "border-gray-100 hover:border-gray-200 text-gray-500"}`}
-                >
-                  <HiOutlineCash className="h-6 w-6" />
-                  <div className="text-left">
-                    <p className="font-bold text-sm uppercase tracking-tight">
-                      Cash on Delivery
-                    </p>
-                    <p className="text-[10px] font-semibold opacity-60">
-                      Payment at your doorstep
-                    </p>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handlePaymentSelect("Card")}
-                  className={`flex items-center gap-4 rounded-xl border-2 p-5 transition-all ${paymentMethod === "Card" ? "border-black bg-gray-50 text-black shadow-sm" : "border-gray-100 hover:border-gray-200 text-gray-500"}`}
-                >
-                  <HiOutlineCreditCard className="h-6 w-6" />
-                  <div className="text-left">
-                    <p className="font-bold text-sm uppercase tracking-tight">
-                      Credit / Debit Card
-                    </p>
-                    <p className="text-[10px] font-semibold opacity-60">
-                      Secure online transaction
-                    </p>
-                  </div>
-                </button>
-              </div>
-              <ErrorMsg message={errors.paymentMethod?.message} />
-
-              {paymentMethod === "Card" && (
-                <div className="mt-8 space-y-5 rounded-xl bg-gray-50 p-6 border border-gray-100 animate-in fade-in duration-300">
-                  <div className="flex justify-between items-center pb-2">
-                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">
-                      Card Credentials
-                    </span>
-                    <HiLockClosed className="w-4 h-4 text-gray-400" />
-                  </div>
-                  <input
-                    {...register("cardNumber", {
-                      required: true,
-                      pattern: /^[0-9]{16}$/,
-                    })}
-                    placeholder="Card Number (16 Digits)"
-                    maxLength={16}
-                    className="w-full p-3.5 rounded border border-gray-200 outline-none focus:border-black text-sm font-mono tracking-widest"
-                  />
-                  <div className="grid grid-cols-2 gap-4">
-                    <input
-                      {...register("expiry", { required: true })}
-                      placeholder="MM / YY"
-                      className="p-3.5 rounded border border-gray-200 outline-none focus:border-black text-sm font-medium"
-                    />
-                    <input
-                      {...register("cvv", { required: true })}
-                      placeholder="CVV"
-                      maxLength={4}
-                      className="p-3.5 rounded border border-gray-200 outline-none focus:border-black text-sm font-medium"
-                    />
-                  </div>
-                </div>
-              )}
-            </section>
+            </div>
           </div>
 
-          {/* SIDEBAR SUMMARY */}
-          <div className="lg:col-span-4">
-            <div className="sticky top-8 bg-white border border-gray-200 p-8 rounded-xl shadow-sm space-y-8">
-              <h3 className="font-bold text-lg uppercase tracking-widest text-gray-900 border-b pb-4 border-gray-100">
-                Order Summary
-              </h3>
+          <form
+            onSubmit={handleSubmit(onPlaceOrder)}
+            className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start"
+          >
+            <div className="lg:col-span-7 space-y-12">
+              <section>
+                <div className="flex items-center gap-3 mb-8">
+                  <HiOutlineTruck className="w-6 h-6 text-black" />
+                  <h2 className="text-xl font-bold">Shipping Information</h2>
+                </div>
 
-              <div className="space-y-5 max-h-[300px] overflow-auto pr-2">
-                {cartItems.map((item, i) => (
-                  <div
-                    key={i}
-                    className="flex justify-between items-start text-sm"
-                  >
-                    <div className="gap-4 flex">
-                      <div className="flex h-12 w-12 items-center justify-center rounded border border-gray-100 bg-gray-50 text-xl overflow-hidden">
-                        {typeof item.image === "string" &&
-                        item.image.startsWith("http") ? (
-                          <img
-                            src={item.image}
-                            alt={item.title}
-                            className="object-cover w-full h-full"
-                          />
-                        ) : (
-                          item.image || item.product?.image
-                        )}
+                <div className="grid grid-cols-2 gap-x-4 gap-y-6">
+                  <div className="col-span-1">
+                    <label className="text-[11px] font-bold uppercase text-slate-400 mb-2 block tracking-tight">
+                      First Name
+                    </label>
+                    <input
+                      {...register("address.firstName", {
+                        required: "first name is required",
+                      })}
+                      placeholder="John"
+                      className={inputStyles(errors.address?.firstName)}
+                    />
+
+                    {errors.address?.firstName && (
+                      <p className="text-[10px] text-red-500 font-bold mt-1 uppercase">
+                        {errors.address.firstName.message}
+                      </p>
+                    )}
+                  </div>
+                  <div className="col-span-1">
+                    <label className="text-[11px] font-bold uppercase text-slate-400 mb-2 block tracking-tight">
+                      Last Name
+                    </label>
+                    <input
+                      {...register("address.lastName", {
+                        required: "last name is required",
+                      })}
+                      placeholder="Doe"
+                      className={inputStyles(errors.address?.lastName)}
+                    />
+                    {errors.address?.lastName && (
+                      <p className="text-[10px] text-red-500 font-bold mt-1 uppercase">
+                        {errors.address.lastName.message}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Phone Number Field with Pakistani Validation */}
+                  <div className="col-span-2">
+                    <label className="text-[11px] font-bold uppercase text-slate-400 mb-2 block tracking-tight">
+                      Phone Number
+                    </label>
+                    <input
+                      {...register("address.phone", {
+                        required: "Phone number is required",
+                        pattern: {
+                          value: /^((\+92)|(0092))?3\d{9}$|^03\d{9}$/,
+                          message: "Use format: 03xxxxxxxxx or +923xxxxxxxxx",
+                        },
+                      })}
+                      placeholder="03001234567"
+                      className={inputStyles(errors.address?.phone)}
+                    />
+                    {errors.address?.phone && (
+                      <p className="text-[10px] text-red-500 font-bold mt-1 uppercase">
+                        {errors.address.phone.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="col-span-2">
+                    <label className="text-[11px] font-bold uppercase text-slate-400 mb-2 block tracking-tight">
+                      Email Address
+                    </label>
+                    <input
+                      {...register("address.email", {
+                        required: "Email is required",
+                        pattern: {
+                          value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                          message: "Invalid email address",
+                        },
+                      })}
+                      placeholder="john@example.com"
+                      className={inputStyles(errors.address?.email)}
+                    />
+                    {errors.address?.email && (
+                      <p className="text-[10px] text-red-500 font-bold mt-1 uppercase">
+                        {errors.address.email.message}
+                      </p>
+                    )}
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-[11px] font-bold uppercase text-slate-400 mb-2 block tracking-tight">
+                      Street Address
+                    </label>
+                    <input
+                      {...register("address.address", {
+                        required: "street address is required",
+                      })}
+                      placeholder="123 Modern Street"
+                      className={inputStyles(errors.address?.address)}
+                    />
+                    {errors.address?.address && (
+                      <p className="text-[10px] text-red-500 font-bold mt-1 uppercase">
+                        {errors.address.address.message}
+                      </p>
+                    )}
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-[11px] font-bold uppercase text-slate-400 mb-2 block tracking-tight">
+                      City
+                    </label>
+                    <input
+                      {...register("address.city", {
+                        required: "city is required",
+                      })}
+                      placeholder="New York"
+                      className={inputStyles(errors.address?.city)}
+                    />
+                    {errors.address?.city && (
+                      <p className="text-[10px] text-red-500 font-bold mt-1 uppercase">
+                        {errors.address.city.message}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {uniqueAddresses.length > 0 && (
+                  <div className="mt-10">
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-[11px] font-bold uppercase text-slate-400 tracking-wider">
+                        Deliver to a saved address
+                      </span>
+                      <span className="text-[10px] bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-md font-bold">
+                        {uniqueAddresses.length} Found
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {uniqueAddresses.map((item, i) => {
+                        const isSelected =
+                          selectedAddressIndex === savedAddresses.indexOf(item);
+                        const data = item.address || item;
+
+                        return (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => handleSelectAddress(item)}
+                            className={`relative flex flex-col items-start p-5 rounded-2xl border-2 text-left transition-all duration-300 ${
+                              isSelected
+                                ? "border-emerald-500 bg-emerald-50/30 shadow-md ring-4 ring-emerald-500/10 scale-[1.01]"
+                                : "border-slate-100 bg-slate-50/50 hover:border-slate-200 hover:bg-white"
+                            }`}
+                          >
+                            <div
+                              className={`absolute top-4 right-4 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-500 ${
+                                isSelected
+                                  ? "bg-emerald-500 scale-110 rotate-0 opacity-100"
+                                  : "bg-slate-200 scale-75 rotate-45 opacity-0"
+                              }`}
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-4 w-4 text-white"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth={3}
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M5 13l4 4L19 7"
+                                />
+                              </svg>
+                            </div>
+
+                            <p
+                              className={`text-[10px] font-black uppercase mb-1 tracking-widest ${
+                                isSelected
+                                  ? "text-emerald-600"
+                                  : "text-slate-400"
+                              }`}
+                            >
+                              {data.city}
+                            </p>
+
+                            <p
+                              className={`text-sm font-bold line-clamp-1 pr-8 transition-colors ${
+                                isSelected
+                                  ? "text-emerald-900"
+                                  : "text-slate-800"
+                              }`}
+                            >
+                              {data.address || data.full}
+                            </p>
+
+                            <p
+                              className={`text-xs mt-1 transition-colors ${
+                                isSelected
+                                  ? "text-emerald-700/70"
+                                  : "text-slate-500"
+                              }`}
+                            >
+                              {data.firstName} {data.lastName}
+                            </p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </section>
+
+              <section className="pt-12 border-t border-slate-100">
+                <div className="flex items-center gap-3 mb-8">
+                  <HiOutlineCreditCard className="w-6 h-6 text-black" />
+                  <h2 className="text-xl font-bold">Payment Method</h2>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {[
+                    {
+                      id: "pay-cash",
+                      value: "Cash",
+                      icon: HiOutlineCash,
+                      label: "Cash on Delivery",
+                    },
+                    {
+                      id: "pay-card",
+                      value: "Card",
+                      icon: HiOutlineCreditCard,
+                      label: "Credit Card",
+                    },
+                  ].map((method) => (
+                    <label
+                      key={method.id}
+                      htmlFor={method.id}
+                      className={`
+                    relative flex items-center justify-between p-6 rounded-2xl border-2 cursor-pointer transition-all
+                    ${selectedPayment === method.value ? "border-black bg-slate-50 ring-4 ring-slate-100" : "border-slate-100 hover:border-slate-200"}
+                    ${errors.paymentMethod ? "border-red-200" : ""}
+                  `}
+                    >
+                      <div className="flex items-center gap-4">
+                        <method.icon className="w-6 h-6" />
+                        <span className="font-bold text-sm tracking-tight">
+                          {method.label}
+                        </span>
                       </div>
-                      <div>
-                        <p className="font-bold leading-none text-gray-900">
+                      <input
+                        type="radio"
+                        value={method.value}
+                        {...register("paymentMethod", {
+                          required: "Please select a payment method",
+                        })}
+                        id={method.id}
+                        className="w-4 h-4 accent-black"
+                      />
+                    </label>
+                  ))}
+                </div>
+
+                {errors.paymentMethod && (
+                  <div className="mt-4 flex items-center gap-2 text-red-500 bg-red-50 p-3 rounded-xl border border-red-100">
+                    <HiExclamationCircle className="w-5 h-5" />
+                    <span className="text-xs font-bold uppercase tracking-wide">
+                      {errors.paymentMethod.message}
+                    </span>
+                  </div>
+                )}
+              </section>
+            </div>
+
+            <aside className="lg:col-span-5 lg:sticky lg:top-12">
+              <div className="bg-slate-50 rounded-[2.5rem] p-8 lg:p-12 border border-slate-100">
+                <h3 className="text-xl font-bold mb-8">Order Summary</h3>
+
+                <div className="space-y-6 max-h-[300px] overflow-y-auto custom-scrollbar mb-8 pr-2">
+                  {displayItems.map((item, i) => (
+                    <div key={i} className="flex gap-4">
+                      <div className="w-20 h-20 bg-white rounded-2xl border border-slate-200 overflow-hidden flex-shrink-0">
+                        <img
+                          src={item.image}
+                          alt={item.title}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="flex-grow flex flex-col justify-center">
+                        <h4 className="font-bold text-sm line-clamp-1">
                           {item.title}
+                        </h4>
+                        <p className="text-xs font-medium text-slate-400 mt-1">
+                          Quantity: {item.quantity}
                         </p>
-                        <p className="mt-1 text-[11px] font-bold uppercase tracking-tighter text-gray-400">
-                          Qty: {item?.quantity}
+                        <p className="text-sm font-bold mt-1">
+                          ${item.price?.toFixed(2)}
                         </p>
                       </div>
                     </div>
-                    <span className="font-bold text-gray-900">
-                      ${item.price.toLocaleString()}
+                  ))}
+                </div>
+
+                <div className="space-y-4 border-t border-slate-200 pt-8">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-500 font-medium">Subtotal</span>
+                    <span className="font-bold">
+                      ${displayTotals?.totalPrice?.toFixed(2)}
                     </span>
                   </div>
-                ))}
-              </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-500 font-medium">Shipping</span>
+                    <span className="font-bold text-green-600 tracking-wide uppercase text-[10px]">
+                      Free
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-500 font-medium">Discount</span>
+                    <span className="font-bold text-red-500">
+                      -${displayTotals?.discountAmount?.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-end pt-4">
+                    <span className="text-lg font-bold">Total</span>
+                    <div className="text-right">
+                      <p className="text-3xl font-black tracking-tighter">
+                        ${displayTotals?.finalPrice?.toFixed(2)}
+                      </p>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">
+                        Including VAT
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
-              <div className="pt-2 space-y-3">
-                <div className="flex justify-between text-[11px] font-bold text-gray-400 uppercase tracking-widest">
-                  <span>Subtotal</span>
-                  <span>${cartData?.totalPrice?.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between text-[11px] font-bold text-red-500 uppercase tracking-widest">
-                  <span>Discount</span>
-                  <span>-${cartData?.discountAmount?.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between items-center pt-6 border-t border-gray-100">
-                  <span className="text-gray-400 font-bold uppercase text-[10px] tracking-[0.2em]">
-                    Grand Total
-                  </span>
-                  <span className="text-2xl font-bold text-black tracking-tight">
-                    ${cartData?.finalPrice?.toLocaleString()}
-                  </span>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className={`w-full mt-10 py-5 rounded-2xl font-bold text-sm tracking-widest uppercase transition-all duration-300 shadow-xl
+                  ${isSubmitting ? "bg-slate-300 cursor-not-allowed" : "bg-black text-white hover:bg-slate-800 hover:scale-[1.02] active:scale-[0.98] shadow-black/20"}
+                `}
+                >
+                  {isSubmitting ? "processing..." : "Place Order"}
+                </button>
+
+                <div className="mt-6 flex items-center justify-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  <HiOutlineShieldCheck className="w-4 h-4 text-emerald-500" />
+                  Guaranteed Safe Checkout
                 </div>
               </div>
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className={`w-full py-5 rounded text-white font-bold uppercase text-xs tracking-[0.2em] shadow-md transition-all active:transform active:scale-[0.98] ${isSubmitting ? "bg-gray-300 cursor-not-allowed" : "bg-black hover:bg-gray-800"}`}
-              >
-                {isSubmitting ? "Processing" : "Confirm Purchase"}
-              </button>
-
-              <div className="flex flex-col items-center gap-4 pt-2">
-                <div className="flex items-center gap-2 text-[9px] text-gray-400 uppercase tracking-[0.2em] font-bold">
-                  <HiOutlineShieldCheck className="text-green-500 w-4 h-4" />
-                  AES 256-bit Encryption
-                </div>
-              </div>
-            </div>
-          </div>
-        </form>
+            </aside>
+          </form>
+        </div>
       </div>
-    </div>
+      <Footer />
+    </>
   );
 }

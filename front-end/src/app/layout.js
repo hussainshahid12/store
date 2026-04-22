@@ -1,7 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ReduxProvider from "../../lib/ReduxProvider";
-import WhatsAppButton from "@/components/btnWhatsapp/ButtonWhatsapp";
 import { AuthProvider } from "@/context/AuthContext";
 
 const geistSans = Geist({
@@ -26,7 +25,7 @@ export default function RootLayout({ children }) {
         <ReduxProvider>
           <AuthProvider>{children}</AuthProvider>
         </ReduxProvider>
-        <WhatsAppButton />
+    
       </body>
     </html>
   );

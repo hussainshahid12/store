@@ -5,13 +5,14 @@ import {
   myOrderTrackService,
   myOrderCancelService,
   myOrderService,
+  BuyNowItemService,
 } from "@/services/orderService";
 
 export const fetchCreateOrder = createAsyncThunk(
   "order/fetchCreateOrder",
-  async (order, { rejectWithValue }) => {
+  async (orderData, { rejectWithValue }) => {
     try {
-      let res = await createOrderService(order);
+      let res = await createOrderService(orderData);
       return res;
     } catch (err) {
       // axios error handling
@@ -72,8 +73,22 @@ export const fetchMyOrderCancel = createAsyncThunk(
   },
 );
 
+export const fetchBuyNowItem = createAsyncThunk(
+  "order/fetchBuyNowItem ",
+  async ({ id, qty }, { rejectWithValue }) => {
+  
+    try {
+      let res = await BuyNowItemService(id, qty);
+      return res;
+    } catch (err) {
+      // axios error handling
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  },
+);
+
 const initialState = {
-  order: null,
+  order: [],
   myOrders: [],
   address: [],
   error: null,
@@ -105,18 +120,18 @@ const orderSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(fetchCreateOrder.pending, (state, action) => {
-        state.isLoading = true;
+        // state.isLoading = true;
         state.error = null;
       })
       .addCase(fetchCreateOrder.fulfilled, (state, action) => {
-        state.isLoading = false;
+        // state.isLoading = false;
         state.order = action.payload;
         // myorder is [] i want create new order disptach function run again in order history page
         state.myOrders = [];
         state.error = null;
       })
       .addCase(fetchCreateOrder.rejected, (state, action) => {
-        state.isLoading = false;
+        // state.isLoading = false;
         state.error = action.payload;
       })
       .addCase(fetchMyOrderAddress.pending, (state, action) => {
@@ -180,6 +195,19 @@ const orderSlice = createSlice({
       })
 
       .addCase(fetchMyOrders.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+      })
+      .addCase(fetchBuyNowItem.pending, (state, action) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchBuyNowItem.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.order = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchBuyNowItem.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
       });

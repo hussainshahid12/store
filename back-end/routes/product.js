@@ -7,6 +7,7 @@ import  Product  from "../controller/product.js";
 product_router
   .get("/", Product.getALLCategory)
   .get("/getproducts", Product.getproducts)
+   .get("/tags", Product.getTagsProducts)
   .get("/getProductCount", Product.getTotalProducts)
   .get("/getFilterCategory", Product.getFilterCategory)
   .get("/getProductDetail/:id", Product.getProductDetail)

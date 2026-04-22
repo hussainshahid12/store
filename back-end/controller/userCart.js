@@ -15,15 +15,16 @@ export const getSessionId = (req, res) => {
 
     res.cookie("sessionId", sessionId, {
       httpOnly: true,
-      secure: isProduction,
+      secure: isProduction, // MUST be HTTPS in production
       sameSite: isProduction ? "none" : "lax",
       path: "/",
-      maxAge: 1000 * 60 * 60 * 24 * 30,
+      maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
     });
   }
 
   return sessionId;
 };
+
 // ===============================
 // RECALCULATE
 // ===============================
@@ -64,12 +65,15 @@ export const findOrCreateCart = async (req, res) => {
     ) {
       guestCart.items.forEach((gItem) => {
         const existing = userCart.items.find(
-          (i) => i.productId.toString() === gItem.productId.toString(),
+          (i) => i.productId.toString() === gItem.productId.toString()
         );
 
         if (existing) existing.quantity += gItem.quantity;
         else userCart.items.push(gItem);
       });
+
+      recalculateCart(userCart); // ✅ FIX
+      await userCart.save();     // ✅ FIX
 
       await Cart.deleteOne({ _id: guestCart._id });
     }
@@ -89,7 +93,7 @@ export const findOrCreateCart = async (req, res) => {
       return userCart;
     }
 
-    // 🔥 create new
+    // 🔥 create new cart
     const newCart = new Cart({
       userId: req.user.id,
       sessionId,
@@ -100,7 +104,7 @@ export const findOrCreateCart = async (req, res) => {
     return newCart;
   }
 
-  // ================= LOGOUT USER (IMPORTANT) =================
+  // ================= LOGOUT USER =================
   if (!req.user && lastUserId) {
     let cart = await Cart.findOne({ userId: lastUserId });
 
@@ -129,18 +133,27 @@ export const findOrCreateCart = async (req, res) => {
 // CONTROLLER
 // ===============================
 class UserCart {
-  // ADD
+  // ================= ADD =================
   static async addToCart(req, res) {
     try {
       const { productId, quantity = 1 } = req.body;
 
-      const product = await Product.findById(productId);
-      if (!product)
+      const product = await Product.findById(productId).lean();
+
+      if (!product) {
         return res.status(404).json({ message: "Product not found" });
+      }
+
+      // ✅ STOCK CHECK
+      if (product.stock < quantity) {
+        return res.status(400).json({ message: "Not enough stock" });
+      }
 
       const cart = await findOrCreateCart(req, res);
 
-      const item = cart.items.find((i) => i.productId.toString() === productId);
+      const item = cart.items.find(
+        (i) => i.productId.toString() === productId
+      );
 
       if (item) {
         item.quantity += Number(quantity);
@@ -164,45 +177,71 @@ class UserCart {
     }
   }
 
-  // GET
+  // ================= GET =================
   static async getCart(req, res) {
-    const cart = await findOrCreateCart(req, res);
-    recalculateCart(cart);
-    await cart.save();
+    try {
+      const cart = await findOrCreateCart(req, res);
 
-    res.json({ success: true, cart });
+      recalculateCart(cart);
+      await cart.save();
+
+      res.json({ success: true, cart });
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
   }
 
-  // REMOVE
+  // ================= REMOVE =================
   static async removeItem(req, res) {
-    const { productId } = req.params;
+    try {
+      const { productId } = req.params;
 
-    const cart = await findOrCreateCart(req, res);
+      const cart = await findOrCreateCart(req, res);
 
-    cart.items = cart.items.filter((i) => i.productId.toString() !== productId);
+      cart.items = cart.items.filter(
+        (i) => i.productId.toString() !== productId
+      );
 
-    recalculateCart(cart);
-    await cart.save();
+      recalculateCart(cart);
+      await cart.save();
 
-    res.json({ success: true, cart });
+      res.json({ success: true, cart });
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
   }
 
-  // UPDATE
+  // ================= UPDATE =================
   static async updateQuantity(req, res) {
-    const { productId, quantity } = req.body;
+    try {
+      const { productId, quantity } = req.body;
 
-    const cart = await findOrCreateCart(req, res);
+      const cart = await findOrCreateCart(req, res);
 
-    const item = cart.items.find((i) => i.productId.toString() === productId);
+      const item = cart.items.find(
+        (i) => i.productId.toString() === productId
+      );
 
-    if (!item) return res.status(404).json({ message: "Item not found" });
+      if (!item) {
+        return res.status(404).json({ message: "Item not found" });
+      }
 
-    item.quantity = Number(quantity);
+      // ✅ REMOVE IF 0
+      if (quantity < 1) {
+        cart.items = cart.items.filter(
+          (i) => i.productId.toString() !== productId
+        );
+      } else {
+        item.quantity = Number(quantity);
+      }
 
-    recalculateCart(cart);
-    await cart.save();
+      recalculateCart(cart);
+      await cart.save();
 
-    res.json({ success: true, cart });
+      res.json({ success: true, cart });
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
   }
 }
 

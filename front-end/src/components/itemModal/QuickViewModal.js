@@ -3,102 +3,185 @@
 import { fetchAddItem } from "../../../lib/features/cartSlice/cart";
 import { useDispatch } from "react-redux";
 import decode from "../../../utils/tokenDecoded/decoded";
-import { FaTimes } from "react-icons/fa";
-import { FiShoppingCart } from "react-icons/fi";
+import { FaTimes, FaPlus, FaMinus } from "react-icons/fa";
+import { FiShoppingCart, FiArrowRight, FiCheckCircle } from "react-icons/fi";
 import Image from "next/image";
 import { memo, useState } from "react";
 import { toast } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import LOGINMODAL from "../login_Modal/LoginModal";
+import { useRouter } from "next/navigation";
 
 const QuickViewModal = ({ product, onClose }) => {
+  const router = useRouter();
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [quantity, setQuantity] = useState(1);
+  const [loader, setLoaader] = useState(false);
   const dispatch = useDispatch();
-
-  const cartHandler = (item) => {
-    const token = decode();
-    if (!token?.id) {
-      setShowLoginPrompt(true); // Switch view to Login inside THIS modal
-      return;
-    }
-    dispatch(fetchAddItem({ productId: item._id }));
-    toast.success("Item added to cart");
-    onClose();
-  };
 
   if (!product) return null;
 
-  return (
-    <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="bg-white dark:bg-slate-900 w-full max-w-md rounded-[2.5rem] overflow-hidden shadow-2xl relative border border-white/10"
-      >
-        {/* Global Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute top-5 right-5 z-50 p-2  dark:bg-slate-800 rounded-full text-gray-300 hover:text-black  transition-all cursor-pointer"
-        >
-          <FaTimes size={16} />
-        </button>
+  const cartHandler = async (isBuyNow = false) => {
+    if (isBuyNow) {
+      let token = localStorage.getItem("isAuth");
+      const decoded_token = decode(token);
 
-        <div className="p-8">
-          <AnimatePresence mode="wait">
-            {!showLoginPrompt ? (
-              /* --- PRODUCT VIEW --- */
-              <motion.div
-                key="product"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                className="space-y-6"
-              >
-                <div className="relative w-full h-64 bg-slate-50 dark:bg-slate-800/40 rounded-[2rem] overflow-hidden">
+      if (!decoded_token?.id) {
+        setShowLoginPrompt(true);
+        return;
+      }
+      router.push(
+        `/checkout?mode=buy-now&productId=${product._id}&quantity=${quantity}`,
+      );
+    } else {
+      // Dispatching to Redux (Handles both Guest and Logged In logic internally)
+      setLoaader(true);
+      await dispatch(fetchAddItem({ productId: product._id, quantity }));
+      setLoaader(false);
+      setQuantity(1);
+      onClose();
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[999] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-sm p-0 md:p-4">
+      <motion.div
+        initial={{ y: "100%", opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: "100%", opacity: 0 }}
+        transition={{ type: "spring", damping: 30, stiffness: 350 }}
+        className="bg-white dark:bg-[#0f172a] w-full max-w-5xl md:rounded-[2.5rem] rounded-t-[2.5rem] overflow-hidden flex flex-col md:flex-row h-[85vh] md:h-auto shadow-2xl relative"
+      >
+        <AnimatePresence mode="wait">
+          {!showLoginPrompt ? (
+            <>
+              {/* LEFT: IMAGE SECTION */}
+              <div className="w-full md:w-1/2 bg-slate-50 dark:bg-slate-900 flex items-center justify-center p-6 md:p-12 relative border-b md:border-b-0 md:border-r border-slate-100 dark:border-slate-800">
+                {/* --- INTERNAL CLOSE ICON --- */}
+                <button
+                  onClick={onClose}
+                  className="md:hidden absolute top-4 right-4 z-50 p-2.5 bg-white/60 dark:bg-slate-800/60 backdrop-blur-md rounded-full shadow-sm text-slate-500 hover:bg-red-500 hover:text-white transition-all duration-300 active:scale-90 border border-black/5 dark:border-white/10"
+                >
+                  <FaTimes size={16} />
+                </button>
+
+                {/* --- STOCK BADGE --- */}
+                <div className="absolute top-4 left-4 z-10">
+                  <span className="flex items-center gap-1.5 bg-emerald-500 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter shadow-lg shadow-emerald-500/30">
+                    <FiCheckCircle size={10} />
+                    In Stock
+                  </span>
+                </div>
+
+                <div className="relative w-full aspect-square max-h-[220px] md:max-h-[350px]">
                   <Image
                     src={product.thumbnail || "https://via.placeholder.com/300"}
                     alt={product.title}
                     fill
-                    className="object-contain p-8"
+                    className="object-contain drop-shadow-2xl"
+                    priority
                   />
                 </div>
-                <div>
-                  <h3 className="text-2xl font-black dark:text-white">
+              </div>
+
+              {/* RIGHT: INFO SECTION */}
+              <div className="flex-1 flex flex-col overflow-hidden relative">
+                {/* Secondary Internal Close for Desktop (Optional, but looks clean) */}
+                <button
+                  onClick={() => {
+                    onClose();
+                    setQuantity(1);
+                  }}
+                  className="hidden md:block absolute top-4 right-4 z-50 p-2.5 bg-white/60 dark:bg-slate-800/60 backdrop-blur-md rounded-full shadow-sm text-slate-500 hover:bg-red-500 hover:text-white transition-all duration-300 active:scale-90 border border-black/5 dark:border-white/10"
+                >
+                  <FaTimes size={20} />
+                </button>
+
+                <div className="flex-1 overflow-y-auto p-6 md:p-10 pb-44 md:pb-10">
+                  <span className="text-primary font-bold text-[10px] uppercase tracking-widest mb-2 block">
+                    Premium Quality
+                  </span>
+                  <h2 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white leading-tight mb-4">
                     {product.title}
-                  </h3>
-                  <p className="text-slate-500 text-sm mt-2 line-clamp-2">
+                  </h2>
+
+                  <div className="flex items-baseline gap-3 mb-6">
+                    <span className="text-3xl font-black text-slate-900 dark:text-white">
+                      ${product.price.toFixed(2)}
+                    </span>
+                    <span className="text-slate-400 line-through text-sm">
+                      ${(product.price * 1.25 * quantity).toFixed(2)}
+                    </span>
+                  </div>
+
+                  <p className="text-slate-500 dark:text-slate-400 text-sm md:text-base leading-relaxed">
                     {product.description}
                   </p>
                 </div>
-                <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
-                  <span className="text-3xl font-black text-primary">
-                    ${product.price}
-                  </span>
-                  <button
-                    onClick={() => cartHandler(product)}
-                    className="flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-xl font-bold hover:opacity-90 transition-all cursor-pointer"
-                  >
-                    <FiShoppingCart /> Add to Cart
-                  </button>
+
+                {/* --- STICKY POWER BAR (Mobile & Desktop) --- */}
+                <div className="absolute bottom-0 left-0 right-0 md:relative bg-white/95 dark:bg-[#0f172a]/95 backdrop-blur-xl border-t border-slate-100 dark:border-slate-800 p-4 md:p-8 space-y-4">
+                  {/* Quantity and Price Summary */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">
+                        Subtotal
+                      </span>
+                      <span className="text-lg font-black dark:text-white ">
+                        ${(product.price * quantity).toFixed(2)}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center bg-slate-100 dark:bg-slate-900 rounded-xl p-1 border border-slate-200 dark:border-slate-700">
+                      <button
+                        onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                        className="w-9 h-9 flex items-center justify-center text-slate-500 active:scale-75 transition-transform"
+                      >
+                        <FaMinus size={10} />
+                      </button>
+                      <span className="w-10 text-center font-bold dark:text-white">
+                        {quantity}
+                      </span>
+                      <button
+                        onClick={() => setQuantity((q) => q + 1)}
+                        className="w-9 h-9 flex items-center justify-center text-slate-500 active:scale-75 transition-transform"
+                      >
+                        <FaPlus size={10} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Buttons */}
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => cartHandler(false)}
+                      disabled={loader}
+                      className="flex-1 h-12 md:h-14 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl md:rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-slate-200 transition-all"
+                    >
+                      <FiShoppingCart />
+                      <span className="hidden sm:inline">
+                        {loader ? "Loading ..." : "Add to Cart"}
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => cartHandler(true)}
+                      className="flex-[2] h-12 md:h-14 bg-primary text-white rounded-xl md:rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/25 active:scale-95 transition-all"
+                    >
+                      Buy Now <FiArrowRight />
+                    </button>
+                  </div>
                 </div>
-              </motion.div>
-            ) : (
-              /* --- LOGIN VIEW (NO SEPARATE MODAL) --- */
-              <motion.div
-                key="login"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-              >
-                {/* We pass isNested so LoginModal doesn't show its own background */}
-                <LOGINMODAL
-                  setShowLoginPrompt={setShowLoginPrompt}
-                  isNested={true}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+              </div>
+            </>
+          ) : (
+            <div className="w-full p-8">
+              <LOGINMODAL
+                setShowLoginPrompt={setShowLoginPrompt}
+                isNested={true}
+              />
+            </div>
+          )}
+        </AnimatePresence>
       </motion.div>
     </div>
   );
