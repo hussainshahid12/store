@@ -1,25 +1,32 @@
 import { NextResponse } from "next/server";
 
 export function middleware(request) {
-  const path = request.nextUrl.pathname;
-
+  const { pathname } = request.nextUrl;
   const publicRoutes = [
     "/login",
     "/signUp",
     "/forgot-password",
     "/verify_otp",
     "/resend_otp",
+    "/_next", // Next.js internals
+    "/api",   // API routes
+    "/static", // Static files
+    "/favicon.ico",
+    "/assets",
+    "/public"
   ];
 
+  // Check if the current path is public
+  const isPublic = publicRoutes.some((route) => pathname.startsWith(route));
   const isAuth = request.cookies.get("JWT_Token");
 
-  // If logged in → block auth pages
-  if (isAuth && publicRoutes.includes(path)) {
+  // If user is authenticated and tries to access an auth page, redirect to home
+  if (isAuth && ["/login", "/signUp", "/forgot-password", "/verify_otp", "/resend_otp"].includes(pathname)) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
-  // If NOT logged in → block protected pages
-  if (!isAuth && !publicRoutes.includes(path)) {
+  // If user is not authenticated and tries to access a protected page, redirect to login
+  if (!isAuth && !isPublic) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
@@ -28,12 +35,8 @@ export function middleware(request) {
 
 export const config = {
   matcher: [
-    "/login",
-    "/signUp",
-    "/category/:path*",
-    "/verify_otp",
-    "/resend_otp",
-    "/forgot-password",
     "/checkout",
+    "/my-orders",
+    "/track-order",
   ],
 };
