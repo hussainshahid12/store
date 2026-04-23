@@ -19,6 +19,7 @@ export function middleware(request) {
   // Check if the current path is public
   const isPublic = publicRoutes.some((route) => pathname.startsWith(route));
   const isAuth = request.cookies.get("JWT_Token");
+    console.log("is", isAuth)
 
   // If user is authenticated and tries to access an auth page, redirect to home
   if (isAuth && ["/login", "/signUp", "/forgot-password", "/verify_otp", "/resend_otp"].includes(pathname)) {

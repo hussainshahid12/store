@@ -9,6 +9,7 @@ import otp_router from "./routes/verify_otp.js";
 import product_router from "./routes/product.js";
 import cart_router from "./routes/userCart.js";
 import order_router from "./routes/order.js";
+import me_router from "./routes/me.js";
 
 const app = express();
 
@@ -42,6 +43,7 @@ app.use("/api/verify_otp", otp_router);
 app.use("/api/product", product_router);
 app.use("/api/cart", cart_router);
 app.use("/api/order", order_router);
+app.use("/api", me_router);
 
 app.get("/", (req, res) => {
   res.send("API Running 🚀");
