@@ -28,7 +28,7 @@ const allowedOrigins = [
 
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL_PROD,
+    origin: true,
     credentials: true,
   }),
 );

@@ -93,17 +93,16 @@ class UserAccount {
       // ================= COOKIE =================
       res.cookie("JWT_Token", token, {
         httpOnly: true,
-        secure: isProduction, // HTTPS required in production
-        sameSite: isProduction ? "none" : "lax",
+        secure: true,
+        sameSite: "lax",
         path: "/",
-  
       });
 
       // ================= IMPORTANT FOR CART =================
       res.cookie("lastUserId", existUser._id.toString(), {
         httpOnly: true,
-        secure: isProduction,
-        sameSite: isProduction ? "none" : "lax",
+        secure: true,
+        sameSite: "lax",
         path: "/",
         maxAge: 1000 * 60 * 60 * 24 * 30,
       });

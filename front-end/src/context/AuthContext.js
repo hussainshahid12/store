@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect } from "react";
-import { api } from "../services/api";
+import decode from "../../utils/tokenDecoded/decoded";
 
 const AuthContext = createContext();
 
@@ -10,22 +10,23 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // On mount, check if user is authenticated by calling /api/me
-    async function checkAuth() {
-      try {
-        console.log("ne");
-        const res = await api.get("api/me");
-        if (res.data && res.data.user) {
-          setIsAuth(res.data.user);
-        } else {
-          setIsAuth(null);
-        }
-      } catch (e) {
+    const token = localStorage.getItem("isAuth");
+
+    if (token) {
+      const decoded = decode(token);
+
+      if (decoded) {
+        setIsAuth(decoded);
+      } else {
+        // invalid token → remove
+        localStorage.removeItem("isAuth");
         setIsAuth(null);
       }
-      setLoading(false);
+    } else {
+      setIsAuth(null);
     }
-    checkAuth();
+
+    setLoading(false);
   }, []);
 
   return (
