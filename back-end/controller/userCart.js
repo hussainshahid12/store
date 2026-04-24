@@ -15,8 +15,8 @@ export const getSessionId = (req, res) => {
 
     res.cookie("sessionId", sessionId, {
       httpOnly: true,
-      secure: isProduction, // MUST be HTTPS in production
-      sameSite: isProduction ? "none" : "lax",
+      secure: true,
+      sameSite: "lax",
       path: "/",
       maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
     });
@@ -65,7 +65,7 @@ export const findOrCreateCart = async (req, res) => {
     ) {
       guestCart.items.forEach((gItem) => {
         const existing = userCart.items.find(
-          (i) => i.productId.toString() === gItem.productId.toString()
+          (i) => i.productId.toString() === gItem.productId.toString(),
         );
 
         if (existing) existing.quantity += gItem.quantity;
@@ -73,7 +73,7 @@ export const findOrCreateCart = async (req, res) => {
       });
 
       recalculateCart(userCart); // ✅ FIX
-      await userCart.save();     // ✅ FIX
+      await userCart.save(); // ✅ FIX
 
       await Cart.deleteOne({ _id: guestCart._id });
     }
@@ -151,9 +151,7 @@ class UserCart {
 
       const cart = await findOrCreateCart(req, res);
 
-      const item = cart.items.find(
-        (i) => i.productId.toString() === productId
-      );
+      const item = cart.items.find((i) => i.productId.toString() === productId);
 
       if (item) {
         item.quantity += Number(quantity);
@@ -199,7 +197,7 @@ class UserCart {
       const cart = await findOrCreateCart(req, res);
 
       cart.items = cart.items.filter(
-        (i) => i.productId.toString() !== productId
+        (i) => i.productId.toString() !== productId,
       );
 
       recalculateCart(cart);
@@ -218,9 +216,7 @@ class UserCart {
 
       const cart = await findOrCreateCart(req, res);
 
-      const item = cart.items.find(
-        (i) => i.productId.toString() === productId
-      );
+      const item = cart.items.find((i) => i.productId.toString() === productId);
 
       if (!item) {
         return res.status(404).json({ message: "Item not found" });
@@ -229,7 +225,7 @@ class UserCart {
       // ✅ REMOVE IF 0
       if (quantity < 1) {
         cart.items = cart.items.filter(
-          (i) => i.productId.toString() !== productId
+          (i) => i.productId.toString() !== productId,
         );
       } else {
         item.quantity = Number(quantity);
