@@ -93,9 +93,11 @@ class UserAccount {
       // ================= COOKIE =================
       res.cookie("JWT_Token", token, {
         httpOnly: true,
-        secure: true,
+        secure: true, // production on vercel
         sameSite: "lax",
         path: "/",
+
+      maxAge: 1000 * 60 * 60 * 24 * 365
       });
 
       // ================= IMPORTANT FOR CART =================
