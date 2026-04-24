@@ -18,7 +18,6 @@ import { resetState as resetCart } from "../../../lib/features/cartSlice/cart";
 import { motion } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 import decode from "../../../utils/tokenDecoded/decoded";
-import { api } from "@/services/api";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -58,32 +57,20 @@ export default function LoginForm() {
     }
 
     if (state?.isVerified) {
-      // No need to set localStorage or decode token, just reload auth state
+      localStorage.setItem("isAuth", state.token);
+
+      const decoded = decode(state.token);
+      setIsAuth(decoded);
+
       setShouldRedirect(true);
     }
   }, [state?.isVerified, error, mounted, setIsAuth, state?.token]);
 
   // FINAL REDIRECT (ALWAYS HOME)
   useEffect(() => {
-  if (shouldRedirect) {
-  async function updateAuth() {
-    try {
-      const res = await api.get("/api/me");
-
-      if (res.data?.user) {
-        setIsAuth(res.data.user);
-      }
-
-      router.replace("/");
-      router.refresh();
-    } catch (err) {
-      console.log(err);
+    if (shouldRedirect) {
+      router.replace("/"); // 🔥 removed return-path logic
     }
-  }
-
-  updateAuth();
-}
-
   }, [shouldRedirect, router]);
 
   const onSubmit = (data) => {
@@ -115,6 +102,7 @@ export default function LoginForm() {
         className="w-full max-w-[480px] z-10"
       >
         <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[3rem] shadow-xl p-8 sm:p-12 border border-white dark:border-gray-800">
+
           {/* Header */}
           <header className="text-center mb-10">
             <h1 className="text-4xl font-black text-slate-900 dark:text-white">
@@ -127,6 +115,7 @@ export default function LoginForm() {
 
           {/* Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+
             {/* EMAIL */}
             <div>
               <div className="relative">
@@ -160,11 +149,11 @@ export default function LoginForm() {
                   placeholder="Password"
                   className={inputStyle}
                 />
-                {errors.password && (
-                  <p className="text-[10px] text-red-500 ml-2 font-bold ">
-                    {errors.password.message}
-                  </p>
-                )}
+                  {errors.password && (
+                <p className="text-[10px] text-red-500 ml-2 font-bold ">
+                  {errors.password.message}
+                </p>
+              )}
 
                 <button
                   type="button"
@@ -183,6 +172,8 @@ export default function LoginForm() {
                   Forgot Password?
                 </Link>
               </div>
+
+            
             </div>
 
             {/* BUTTON */}
