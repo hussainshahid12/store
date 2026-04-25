@@ -22,6 +22,7 @@ import { fetchCartItems } from "../../../lib/features/cartSlice/cart";
 import Loader from "@/components/loader/Loader";
 import Footer from "@/components/footer/Footer";
 import CheckoutSkeleton from "@/components/skeletonLoader/CheckoutSkeleton";
+import { resetOrder } from "../../../lib/features/orderSlice/orderSlice";
 
 export default function Checkout() {
   const router = useRouter();
@@ -43,6 +44,10 @@ export default function Checkout() {
 
   const [selectedAddressIndex, setSelectedAddressIndex] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    dispatch(resetOrder());
+  }, []);
 
   // Memoize unique addresses
   const uniqueAddresses = useMemo(() => {
@@ -93,10 +98,12 @@ export default function Checkout() {
       const quantity = params.get("quantity");
 
       if (mode === "buy-now") {
+        console.log("doen..");
         if (!productId) return router.replace("/");
         dispatch(fetchBuyNowItem({ id: productId, qty: quantity }));
       } else {
         if (cartItems.length === 0) {
+          console.log("doen");
           const result = await dispatch(fetchCartItems());
           const items = result.payload?.cart?.items || [];
           if (items.length === 0) router.replace("/");
@@ -136,7 +143,6 @@ export default function Checkout() {
       mode,
     };
 
-    console.log("wow", orderPayload);
     let res = await dispatch(fetchCreateOrder(orderPayload));
 
     if (res.meta.requestStatus === "fulfilled") {

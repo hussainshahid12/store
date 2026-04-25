@@ -109,8 +109,9 @@ const orderSlice = createSlice({
       state.order.message = null;
       state.error = null;
     },
-    decrement: (state) => {
-      state.value -= 1;
+
+    resetOrder: (state) => {
+      state.order =[];
     },
     incrementByAmount: (state, action) => {
       state.value += action.payload;
@@ -214,7 +215,7 @@ const orderSlice = createSlice({
   },
 });
 
-export const { resetState, decrement, incrementByAmount, resetCartStatus } =
+export const { resetState, resetOrder, incrementByAmount, resetCartStatus } =
   orderSlice.actions;
 
 export default orderSlice.reducer;
