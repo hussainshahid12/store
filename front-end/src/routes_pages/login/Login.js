@@ -72,7 +72,7 @@ export default function LoginForm() {
     if (shouldRedirect) {
       // Check for redirect param
       const redirectTo = searchParams.get("redirect") || "/";
-      router.replace(redirectTo);
+      window.location.href = redirectTo;
     }
   }, [shouldRedirect, router, searchParams]);
 
