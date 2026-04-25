@@ -11,7 +11,6 @@ const ProductCard = memo(({ product, onOpenPopup }) => {
 
   const imageSrc = product.thumbnail || PLACEHOLDER_IMAGE;
 
-  // Professional URL Slug
   const productUrl = `/product/${product._id}/${
     product.title?.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "view"
   }`;
@@ -23,9 +22,18 @@ const ProductCard = memo(({ product, onOpenPopup }) => {
 
   return (
     <div className="group flex flex-col snap-start bg-white dark:bg-slate-900 transition-all duration-300 h-full">
-      {/* 1. IMAGE AREA - Updated to match New Arrival aspect ratio and background */}
+      {/* 1. IMAGE AREA */}
       <div className="relative aspect-[1/1.2] bg-[#F3F4F6] dark:bg-slate-800 rounded-2xl overflow-hidden flex items-center justify-center p-4 transition-all">
         <Link href={productUrl} className="absolute inset-0 z-10" />
+
+        {/* --- LOADER START --- */}
+        {!isLoaded && (
+          <div className="absolute inset-0 z-0 flex items-center justify-center bg-slate-100 dark:bg-slate-800 animate-pulse">
+            {/* You can replace this div with a Spinner icon if you prefer */}
+            <div className="w-8 h-8 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
+          </div>
+        )}
+        {/* --- LOADER END --- */}
 
         {/* Badge Container */}
         <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 z-20">
@@ -51,13 +59,14 @@ const ProductCard = memo(({ product, onOpenPopup }) => {
           alt={product.title || "Product Image"}
           fill
           sizes="(max-width: 768px) 50vw, 20vw"
+          // We keep opacity-0 until loaded so the loader is visible behind it
           className={`object-contain p-4 transition-all duration-700 ease-in-out ${
             isLoaded ? "scale-100 opacity-100" : "scale-105 opacity-0"
           } group-hover:scale-105`}
           onLoadingComplete={() => setIsLoaded(true)}
         />
 
-        {/* Quick Add Overlay (Desktop) - Consistent with New Arrival slide-up */}
+        {/* Quick Add Overlay (Desktop) */}
         <div className="absolute inset-x-2 bottom-2 z-30 translate-y-12 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 hidden lg:block">
           <button
             onClick={(e) => {
@@ -82,7 +91,7 @@ const ProductCard = memo(({ product, onOpenPopup }) => {
         </button>
       </div>
 
-      {/* 2. INFO AREA - Streamlined for 6-item grid */}
+      {/* 2. INFO AREA */}
       <div className="mt-3 flex flex-col flex-grow px-1">
         <span className="text-[9px] text-slate-400 dark:text-slate-500 uppercase font-black tracking-widest truncate">
           {product.brand || product.category || "ESSENTIALS"}
@@ -92,7 +101,7 @@ const ProductCard = memo(({ product, onOpenPopup }) => {
           {product.title}
         </h3>
 
-        {/* 5-Star Rating - Compact style */}
+        {/* 5-Star Rating */}
         <div className="flex items-center gap-1 mb-2">
           <div className="flex text-yellow-400">
             {[...Array(5)].map((_, i) => (
