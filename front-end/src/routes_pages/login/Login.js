@@ -13,7 +13,7 @@ import {
 } from "../../../lib/features/userSlice/user";
 import toast, { Toaster } from "react-hot-toast";
 import Loader from "@/components/loader/Loader";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { resetState as resetCart } from "../../../lib/features/cartSlice/cart";
 import { motion } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
@@ -21,6 +21,7 @@ import decode from "../../../utils/tokenDecoded/decoded";
 
 export default function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const dispatch = useDispatch();
   const { setIsAuth } = useAuth();
 
@@ -66,12 +67,14 @@ export default function LoginForm() {
     }
   }, [state?.isVerified, error, mounted, setIsAuth, state?.token]);
 
-  // FINAL REDIRECT (ALWAYS HOME)
+  // FINAL REDIRECT (supports return-path)
   useEffect(() => {
     if (shouldRedirect) {
-      router.replace("/"); // 🔥 removed return-path logic
+      // Check for redirect param
+      const redirectTo = searchParams.get("redirect") || "/";
+      router.replace(redirectTo);
     }
-  }, [shouldRedirect, router]);
+  }, [shouldRedirect, router, searchParams]);
 
   const onSubmit = (data) => {
     dispatch(fetchLoginUser(data));
@@ -102,7 +105,6 @@ export default function LoginForm() {
         className="w-full max-w-[480px] z-10"
       >
         <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[3rem] shadow-xl p-8 sm:p-12 border border-white dark:border-gray-800">
-
           {/* Header */}
           <header className="text-center mb-10">
             <h1 className="text-4xl font-black text-slate-900 dark:text-white">
@@ -115,7 +117,6 @@ export default function LoginForm() {
 
           {/* Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-
             {/* EMAIL */}
             <div>
               <div className="relative">
@@ -149,11 +150,11 @@ export default function LoginForm() {
                   placeholder="Password"
                   className={inputStyle}
                 />
-                  {errors.password && (
-                <p className="text-[10px] text-red-500 ml-2 font-bold ">
-                  {errors.password.message}
-                </p>
-              )}
+                {errors.password && (
+                  <p className="text-[10px] text-red-500 ml-2 font-bold ">
+                    {errors.password.message}
+                  </p>
+                )}
 
                 <button
                   type="button"
@@ -172,8 +173,6 @@ export default function LoginForm() {
                   Forgot Password?
                 </Link>
               </div>
-
-            
             </div>
 
             {/* BUTTON */}
