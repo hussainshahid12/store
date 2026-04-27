@@ -3,8 +3,24 @@ const nextConfig = {
   reactStrictMode: true,
   // allowedDevOrigins: ["192.168.0.104" , "pakbazar.vercel.app"],
 
-  images: {
-    domains: ["picsum.photos", "images.unsplash.com", "cdn.dummyjson.com"],
+images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'cdn.dummyjson.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'picsum.photos',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        pathname: '/**',
+      },
+    ],
   },
 
   // 🔥 ADD THIS (IMPORTANT)

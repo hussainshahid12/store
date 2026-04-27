@@ -115,7 +115,7 @@ const ProductCarousel = ({ title, subtitle, products = [], isLoading = false }) 
           </div>
 
           {!isLoading && displayProducts.length > 2 && (
-            <div className="hidden md:flex gap-2">
+            <div className="flex gap-2">
               <button onClick={() => scroll("left")} className="w-9 h-9 flex items-center justify-center border border-gray-200 rounded-full hover:bg-black hover:text-white transition-all"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg></button>
               <button onClick={() => scroll("right")} className="w-9 h-9 flex items-center justify-center border border-gray-200 rounded-full hover:bg-black hover:text-white transition-all"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg></button>
             </div>
