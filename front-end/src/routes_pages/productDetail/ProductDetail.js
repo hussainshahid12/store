@@ -176,7 +176,7 @@ export default function ProductDetail({ slug }) {
             >
               {mainImage && (
                 <Image
-                  src={mainImage}
+                  src={mainImage.startsWith('http') || mainImage.startsWith('/') ? mainImage : '/' + mainImage}
                   alt={product.title}
                   fill
                   className="object-contain p-8 lg:p-16"
@@ -210,7 +210,7 @@ export default function ProductDetail({ slug }) {
                   className={`shrink-0 w-20 h-20 rounded-2xl border-2 transition-all overflow-hidden bg-gray-50 ${mainImage === img ? "border-black scale-95" : "border-transparent"}`}
                 >
                   <Image
-                    src={img}
+                    src={img.startsWith('http') || img.startsWith('/') ? img : '/' + img}
                     alt="Gallery"
                     width={80}
                     height={80}
