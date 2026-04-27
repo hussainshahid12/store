@@ -4,6 +4,7 @@ const nextConfig = {
   // allowedDevOrigins: ["192.168.0.104" , "pakbazar.vercel.app"],
 
 images: {
+    // Remove the old 'domains' array entirely
     remotePatterns: [
       {
         protocol: 'https',

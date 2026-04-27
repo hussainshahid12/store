@@ -32,16 +32,19 @@ import Loader from "@/components/loader/Loader";
 export default function ProductDetail({ slug }) {
   const dispatch = useDispatch();
   const router = useRouter();
+  
+  // Data Selectors
   const product = useSelector((state) => state.product.items?.result);
   const { isLoading: loading } = useSelector((state) => state.cartSlice);
 
-  const [mainImage, setMainImage] = useState(null); // Changed to null for cleaner checks
+  // States
+  const [mainImage, setMainImage] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [shareMessage, setShareMessage] = useState(null);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
-  // ZOOM STATES
+  // Zoom States
   const [isZooming, setIsZooming] = useState(false);
   const [zoomPos, setZoomPos] = useState({ x: 0, y: 0 });
   const containerRef = useRef(null);
@@ -69,20 +72,18 @@ export default function ProductDetail({ slug }) {
 
   const copyToClipboard = async () => {
     if (typeof window === "undefined") return;
-    const url = window.location.href;
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(window.location.href);
       setShareMessage("Link copied! 📋");
       setShowShareModal(false);
       setTimeout(() => setShareMessage(null), 3000);
     } catch (err) {
-      setShareMessage("Failed to copy ");
+      setShareMessage("Failed to copy");
     }
   };
 
   const cartHandler = async (item) => {
-    const { _id: productId } = item;
-    await dispatch(fetchAddItem({ productId, quantity: Number(quantity) }));
+    await dispatch(fetchAddItem({ productId: item._id, quantity: Number(quantity) }));
     toast.success("Item added to cart");
     setQuantity(1);
     window.dispatchEvent(new Event("cart-item-added"));
@@ -98,22 +99,13 @@ export default function ProductDetail({ slug }) {
     router.push(`/checkout?mode=buy-now&productId=${item._id}&quantity=${quantity}`);
   };
 
-  if (!product) {
-    return (
-      <div className="p-20 text-center animate-pulse text-gray-400 font-bold uppercase tracking-widest">
-        Loading Product...
-      </div>
-    );
-  }
+  if (!product) return <div className="p-20 text-center animate-pulse text-gray-400">Loading Product...</div>;
 
   const discountedPrice = product.discountPercentage
     ? (product.price * (1 - product.discountPercentage / 100)).toFixed(2)
     : product.price;
 
   const totalPrice = (discountedPrice * quantity).toFixed(2);
-  const dimensionsStr = product.dimensions
-    ? `${product.dimensions.width} x ${product.dimensions.height} x ${product.dimensions.depth} cm`
-    : "N/A";
 
   return (
     <div className="bg-white min-h-screen font-sans text-[#1d1d1f] mt-[150px]">
@@ -124,6 +116,7 @@ export default function ProductDetail({ slug }) {
 
       <div className="max-w-7xl mx-auto px-0 sm:px-6 lg:px-8 lg:pt-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 lg:gap-16 items-start">
+          
           {/* LEFT: IMAGE SECTION */}
           <div className="lg:col-span-7">
             <div
@@ -132,15 +125,14 @@ export default function ProductDetail({ slug }) {
               onMouseLeave={() => setIsZooming(false)}
               className="relative aspect-square bg-[#fbfbfb] lg:rounded-3xl overflow-hidden border border-gray-100 cursor-crosshair"
             >
-              {/* IMPORTANT: Only render Image if mainImage is not null */}
               {mainImage && (
                 <Image
                   src={mainImage}
-                  alt={product?.title || "Product Image"}
+                  alt={product?.title}
                   fill
+                  unoptimized={true} // FIX: Bypasses production optimization issues
                   className="object-contain p-8 lg:p-16"
                   priority
-                  sizes="(max-width: 768px) 100vw, 50vw"
                 />
               )}
               
@@ -154,10 +146,8 @@ export default function ProductDetail({ slug }) {
                 <div
                   className="hidden lg:block absolute border border-zinc-300 bg-white/20 pointer-events-none"
                   style={{
-                    width: "35%",
-                    height: "35%",
-                    left: `${zoomPos.x}%`,
-                    top: `${zoomPos.y}%`,
+                    width: "35%", height: "35%",
+                    left: `${zoomPos.x}%`, top: `${zoomPos.y}%`,
                     transform: "translate(-50%, -50%)",
                   }}
                 />
@@ -176,8 +166,9 @@ export default function ProductDetail({ slug }) {
                 >
                   <Image
                     src={img}
-                    alt={`Gallery ${i}`}
+                    alt={`Thumb ${i}`}
                     fill
+                    unoptimized={true} // FIX: Ensure gallery images show in production
                     className="object-cover"
                   />
                 </button>
@@ -187,6 +178,7 @@ export default function ProductDetail({ slug }) {
 
           {/* RIGHT: DETAILS SECTION */}
           <div className="lg:col-span-5 px-6 pt-8 lg:pt-0 relative lg:sticky lg:top-10 self-start">
+            {/* Zoom Preview Layer */}
             {isZooming && mainImage && (
               <div
                 className="hidden lg:block absolute inset-0 z-[120] bg-white border border-gray-200 rounded-3xl shadow-2xl overflow-hidden pointer-events-none"
@@ -203,17 +195,12 @@ export default function ProductDetail({ slug }) {
               <span className="text-zinc-400 font-bold text-xs uppercase tracking-widest">
                 {product?.brand || "Premium Brand"}
               </span>
-              <button
-                onClick={() => setShowShareModal(true)}
-                className="cursor-pointer hidden lg:block text-gray-400 hover:text-black transition-colors"
-              >
+              <button onClick={() => setShowShareModal(true)} className="hidden lg:block text-gray-400 hover:text-black">
                 <FaShareAlt />
               </button>
             </div>
 
-            <h1 className="text-3xl lg:text-5xl font-bold tracking-tight mb-4 leading-tight">
-              {product?.title}
-            </h1>
+            <h1 className="text-3xl lg:text-5xl font-bold tracking-tight mb-4 leading-tight">{product?.title}</h1>
 
             <div className="flex items-center gap-4 mb-6">
               <div className="flex items-center gap-1 bg-zinc-900 text-white px-2 py-1 rounded text-xs font-bold">
@@ -233,21 +220,15 @@ export default function ProductDetail({ slug }) {
 
             <p className="text-zinc-500 leading-relaxed text-lg mb-8">{product?.description}</p>
 
-            <div className="grid grid-cols-2 gap-3 mb-8">
-              <DataCard icon={<FaTruck />} label="Shipping" value={product?.shippingInformation} />
-              <DataCard icon={<FaShieldAlt />} label="Warranty" value={product?.warrantyInformation} />
-              <DataCard icon={<FaWeightHanging />} label="Weight" value={`${product?.weight} kg`} />
-              <DataCard icon={<FaRulerCombined />} label="Dimensions" value={dimensionsStr} />
-            </div>
-
+            {/* Actions */}
             <div className="flex flex-col gap-4 mt-10 mb-20 lg:mb-10">
               <div className="flex items-center gap-3">
                 <div className="flex items-center bg-gray-100 rounded-2xl p-1 border border-gray-200">
-                  <button onClick={() => setQuantity((p) => Math.max(1, p - 1))} className="w-12 h-12 flex items-center justify-center hover:bg-white rounded-xl">
+                  <button onClick={() => setQuantity(q => Math.max(1, q - 1))} className="w-12 h-12 flex items-center justify-center hover:bg-white rounded-xl transition-colors">
                     <FaMinus size={12} />
                   </button>
                   <span className="px-5 font-bold text-lg">{quantity}</span>
-                  <button onClick={() => setQuantity((p) => p + 1)} className="w-12 h-12 flex items-center justify-center hover:bg-white rounded-xl">
+                  <button onClick={() => setQuantity(q => q + 1)} className="w-12 h-12 flex items-center justify-center hover:bg-white rounded-xl transition-colors">
                     <FaPlus size={12} />
                   </button>
                 </div>
@@ -260,7 +241,7 @@ export default function ProductDetail({ slug }) {
               </div>
               <button
                 onClick={() => handleBuyNow(product)}
-                className="w-full bg-primary text-white h-14 rounded-2xl font-bold uppercase tracking-widest text-[11px] lg:text-xs transition-all active:scale-95 shadow-lg shadow-gray-200"
+                className="w-full bg-primary text-white h-14 rounded-2xl font-bold uppercase tracking-widest text-[11px] lg:text-xs shadow-lg"
               >
                 Buy Now — ${totalPrice}
               </button>
@@ -269,7 +250,7 @@ export default function ProductDetail({ slug }) {
         </div>
       </div>
 
-      {/* Share Modal Logic */}
+      {/* Share Modal */}
       <AnimatePresence>
         {showShareModal && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
@@ -279,10 +260,10 @@ export default function ProductDetail({ slug }) {
               </button>
               <h3 className="text-xl font-bold mb-6">Share this item</h3>
               <div className="grid grid-cols-3 gap-4">
-                <ShareLink icon={<FaWhatsapp />} label="WhatsApp" color="text-green-600" bg="bg-green-50" href={`https://wa.me/?text=${encodeURIComponent(product.title + " " + window.location.href)}`} />
-                <ShareLink icon={<FaFacebook />} label="Facebook" color="text-blue-600" bg="bg-blue-50" href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`} />
+                <ShareLink icon={<FaWhatsapp />} label="WhatsApp" color="text-green-600" bg="bg-green-50" href={`https://wa.me/?text=${encodeURIComponent(product.title + " " + (typeof window !== "undefined" ? window.location.href : ""))}`} />
+                <ShareLink icon={<FaFacebook />} label="Facebook" color="text-blue-600" bg="bg-blue-50" href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(typeof window !== "undefined" ? window.location.href : "")}`} />
                 <button onClick={copyToClipboard} className="flex flex-col items-center gap-2">
-                  <div className="w-14 h-14 bg-gray-50 text-gray-600 rounded-2xl flex items-center justify-center text-2xl hover:bg-gray-100"><FaCopy /></div>
+                  <div className="w-14 h-14 bg-gray-50 text-gray-600 rounded-2xl flex items-center justify-center text-2xl hover:bg-gray-100 transition-colors"><FaCopy /></div>
                   <span className="text-[10px] font-bold uppercase tracking-tighter">Copy Link</span>
                 </button>
               </div>
@@ -294,7 +275,7 @@ export default function ProductDetail({ slug }) {
   );
 }
 
-// Sub-components remain as you had them, just ensuring clean props
+// Sub-components
 function DataCard({ icon, label, value }) {
   return (
     <div className="flex items-center gap-3 p-3 rounded-2xl bg-white border border-gray-100 shadow-sm">
