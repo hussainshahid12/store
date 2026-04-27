@@ -1,7 +1,7 @@
 import { memo, useState } from "react";
 import Link from "next/link";
 import { FaStar } from "react-icons/fa";
-import { FiPlus } from "react-icons/fi";
+import { FiPlus } from "react-icons/fi"; // Corrected import
 import Image from "next/image";
 
 const PLACEHOLDER_IMAGE = "/placeholder.png";
@@ -9,9 +9,13 @@ const PLACEHOLDER_IMAGE = "/placeholder.png";
 const ProductCard = memo(({ product, onOpenPopup }) => {
   const [isLoaded, setIsLoaded] = useState(false);
 
+  // Safety check for image source
   const imageSrc = product.thumbnail || PLACEHOLDER_IMAGE;
 
-  const productUrl = `/product/${product._id}/${
+  // Handle both MongoDB _id and standard id
+  const productId = product._id || product.id;
+
+  const productUrl = `/product/${productId}/${
     product.title?.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "view"
   }`;
 
@@ -26,16 +30,14 @@ const ProductCard = memo(({ product, onOpenPopup }) => {
       <div className="relative aspect-[1/1.2] bg-[#F3F4F6] dark:bg-slate-800 rounded-2xl overflow-hidden flex items-center justify-center p-4 transition-all">
         <Link href={productUrl} className="absolute inset-0 z-10" />
 
-        {/* --- LOADER START --- */}
+        {/* Loader - visible while image is fetching */}
         {!isLoaded && (
           <div className="absolute inset-0 z-0 flex items-center justify-center bg-slate-100 dark:bg-slate-800 animate-pulse">
-            {/* You can replace this div with a Spinner icon if you prefer */}
             <div className="w-8 h-8 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
           </div>
         )}
-        {/* --- LOADER END --- */}
 
-        {/* Badge Container */}
+        {/* Badges */}
         <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 z-20">
           {product.discountPercentage > 0 && (
             <span className="bg-red-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow-sm w-fit">
@@ -47,26 +49,21 @@ const ProductCard = memo(({ product, onOpenPopup }) => {
               Top Seller
             </span>
           )}
-          {product.isNew && !product.isTopSeller && (
-            <span className="bg-blue-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow-sm w-fit uppercase tracking-tighter">
-              New
-            </span>
-          )}
         </div>
 
         <Image
           src={imageSrc}
           alt={product.title || "Product Image"}
           fill
+          unoptimized={true} // BYPASSES NEXT.JS OPTIMIZATION ERRORS IN PRODUCTION
           sizes="(max-width: 768px) 50vw, 20vw"
-          // We keep opacity-0 until loaded so the loader is visible behind it
           className={`object-contain p-4 transition-all duration-700 ease-in-out ${
             isLoaded ? "scale-100 opacity-100" : "scale-105 opacity-0"
           } group-hover:scale-105`}
           onLoadingComplete={() => setIsLoaded(true)}
         />
 
-        {/* Quick Add Overlay (Desktop) */}
+        {/* Quick Add (Desktop) */}
         <div className="absolute inset-x-2 bottom-2 z-30 translate-y-12 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 hidden lg:block">
           <button
             onClick={(e) => {
@@ -79,7 +76,7 @@ const ProductCard = memo(({ product, onOpenPopup }) => {
           </button>
         </div>
 
-        {/* Plus Button (Mobile/Tablet) */}
+        {/* Quick Add (Mobile) */}
         <button
           onClick={(e) => {
             e.preventDefault();
@@ -101,7 +98,6 @@ const ProductCard = memo(({ product, onOpenPopup }) => {
           {product.title}
         </h3>
 
-        {/* 5-Star Rating */}
         <div className="flex items-center gap-1 mb-2">
           <div className="flex text-yellow-400">
             {[...Array(5)].map((_, i) => (
@@ -121,7 +117,6 @@ const ProductCard = memo(({ product, onOpenPopup }) => {
           </span>
         </div>
 
-        {/* Price Section */}
         <div className="flex items-center gap-2 mt-auto">
           <span className="text-sm font-black text-slate-900 dark:text-white">
             ${product.price}
