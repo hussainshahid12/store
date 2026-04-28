@@ -4,22 +4,18 @@ const nextConfig = {
   // allowedDevOrigins: ["192.168.0.104" , "pakbazar.vercel.app"],
 
 images: {
-    // Remove the old 'domains' array entirely
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'cdn.dummyjson.com',
-        pathname: '/**',
+        hostname: '**.dummyjson.com', // Allows ANY subdomain of dummyjson
       },
       {
         protocol: 'https',
-        hostname: 'picsum.photos',
-        pathname: '/**',
+        hostname: '**.photos', // Covers picsum.photos
       },
       {
         protocol: 'https',
-        hostname: 'images.unsplash.com',
-        pathname: '/**',
+        hostname: '**.unsplash.com',
       },
     ],
   },
