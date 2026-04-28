@@ -4,7 +4,7 @@ import { fetchAddItem } from "../../../lib/features/cartSlice/cart";
 import { useDispatch } from "react-redux";
 import decode from "../../../utils/tokenDecoded/decoded";
 import { FaTimes, FaPlus, FaMinus } from "react-icons/fa";
-import { FiShoppingCart, FiArrowRight, FiCheckCircle, FiLoader } from "react-icons/fi";
+import { FiShoppingCart, FiArrowRight, FiCheckCircle } from "react-icons/fi";
 import Image from "next/image";
 import { memo, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -15,9 +15,10 @@ const QuickViewModal = ({ product, onClose }) => {
   const router = useRouter();
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [quantity, setQuantity] = useState(1);
-  const [status, setStatus] = useState("idle");
+  const [loader, setLoader] = useState(false);
   const dispatch = useDispatch();
 
+  // Prevent background scroll
   useEffect(() => {
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = "unset"; };
@@ -27,143 +28,105 @@ const QuickViewModal = ({ product, onClose }) => {
 
   const cartHandler = async (isBuyNow = false) => {
     if (isBuyNow) {
-      const token = localStorage.getItem("isAuth");
+      let token = localStorage.getItem("isAuth");
       const decoded_token = decode(token);
       if (!decoded_token?.id) {
         setShowLoginPrompt(true);
         return;
       }
       router.push(`/checkout?mode=buy-now&productId=${product._id}&quantity=${quantity}`);
-      return;
-    }
-
-    setStatus("loading");
-    try {
+    } else {
+      setLoader(true);
       await dispatch(fetchAddItem({ productId: product._id, quantity }));
-      setStatus("success");
-      setTimeout(() => { setStatus("idle"); onClose(); }, 1500);
-    } catch (error) {
-      setStatus("idle");
+      setLoader(false);
+      setQuantity(1);
+      onClose();
     }
   };
 
   return (
-    <div className="fixed inset-0 z-[999] flex items-center justify-center bg-slate-950/40 backdrop-blur-[2px] p-4">
-      {/* Backdrop */}
-      <motion.div 
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} 
-        className="absolute inset-0" onClick={onClose} 
-      />
-
+    <div className="fixed inset-0 z-[999] flex items-end md:items-center justify-center bg-slate-900/70 backdrop-blur-md p-0 md:p-4">
       <motion.div
-        initial={{ scale: 0.9, opacity: 0, y: 20 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        className="bg-white dark:bg-slate-900 w-full max-w-[850px] rounded-[2rem] overflow-hidden shadow-2xl relative z-10 flex flex-col md:flex-row border border-white/20"
+        initial={{ y: "100%", opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: "100%", opacity: 0 }}
+        transition={{ type: "spring", damping: 25, stiffness: 200 }}
+        className="bg-white dark:bg-[#0f172a] w-full max-w-5xl md:rounded-[2.5rem] rounded-t-[2.5rem] overflow-hidden flex flex-col md:flex-row h-[90vh] md:h-auto shadow-2xl relative"
       >
         <AnimatePresence mode="wait">
           {!showLoginPrompt ? (
             <>
-              {/* IMAGE SECTION - COMPACT */}
-              <div className="w-full md:w-[40%] bg-slate-50 dark:bg-slate-800/50 p-8 flex items-center justify-center relative">
-                <div className="relative w-full aspect-square group">
+              {/* LEFT: IMAGE SECTION */}
+              <div className="w-full md:w-1/2 bg-slate-50 dark:bg-slate-900 flex items-center justify-center p-6 md:p-12 relative border-b md:border-b-0 md:border-r border-slate-100 dark:border-slate-800">
+                <button onClick={onClose} className="md:hidden absolute top-4 right-4 z-50 p-2 bg-white/80 dark:bg-slate-800/80 rounded-full shadow-md text-slate-600">
+                  <FaTimes size={18} />
+                </button>
+
+                {/* IMAGE FIX: Forced height container + Priority loading */}
+                <div className="relative w-full h-[250px] md:h-[400px] flex items-center justify-center">
                   <Image
-                    src={product.thumbnail}
-                    alt={product.title}
+                    key={product._id} 
+                    src={product.thumbnail }
+                    alt={product.title }
                     fill
-                    className="object-contain transition-transform duration-500 group-hover:scale-105"
+                    priority={true} // Forces instant load in production
+                    unoptimized={true} // Bypasses Next.js proxy if it's failing
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="object-contain drop-shadow-2xl"
                   />
                 </div>
               </div>
 
-              {/* CONTENT SECTION */}
-              <div className="flex-1 p-8 md:p-10 flex flex-col">
-                <button 
-                  onClick={onClose} 
-                  className="absolute top-6 right-6 p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
-                >
-                  <FaTimes size={18} />
+              {/* RIGHT: INFO SECTION */}
+              <div className="flex-1 flex flex-col overflow-hidden relative p-6 md:p-10">
+                <button onClick={onClose} className="hidden md:block absolute top-4 right-4 z-50 p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
+                  <FaTimes size={20} className="text-slate-400" />
                 </button>
 
-                <div className="mb-auto">
-                  <span className="text-[10px] font-bold tracking-widest uppercase text-blue-600 mb-2 block">Quick View</span>
-                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2 leading-tight">
+                <div className="flex-1 overflow-y-auto pb-40 md:pb-0">
+                  <h2 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white mb-4 leading-tight">
                     {product.title}
                   </h2>
-                  <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed line-clamp-3 mb-6">
-                    {product.description}
-                  </p>
-
-                  <div className="flex items-baseline gap-2 mb-8">
-                    <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">
-                      ${product.price?.toFixed(2)}
-                    </span>
-                    <span className="text-xs font-bold text-slate-400 uppercase">Per Unit</span>
+                  <div className="flex items-baseline gap-3 mb-6">
+                    <span className="text-3xl font-black text-slate-900 dark:text-white">${product.price?.toFixed(2)}</span>
                   </div>
+                  <p className="text-slate-500 dark:text-slate-400 text-sm md:text-base leading-relaxed">{product.description}</p>
                 </div>
 
-                {/* CONTROLS */}
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-2 border border-slate-100 dark:border-slate-800">
-                    <div className="flex items-center">
-                      <button 
-                        onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                        className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white dark:hover:bg-slate-700 transition-all text-slate-500 hover:text-red-500"
-                      >
-                        <FaMinus size={12} />
-                      </button>
-                      <div className="w-12 text-center overflow-hidden">
-                        <AnimatePresence mode="wait">
-                          <motion.span 
-                            key={quantity}
-                            initial={{ y: 5, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -5, opacity: 0 }}
-                            className="block font-bold text-lg dark:text-white tabular-nums"
-                          >
-                            {quantity}
-                          </motion.span>
-                        </AnimatePresence>
-                      </div>
-                      <button 
-                        onClick={() => setQuantity(q => q + 1)}
-                        className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white dark:hover:bg-slate-700 transition-all text-slate-500 hover:text-blue-500"
-                      >
-                        <FaPlus size={12} />
-                      </button>
-                    </div>
-                    
-                    <div className="pr-4 text-right">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Subtotal</p>
-                      <p className="font-black text-xl dark:text-white">${(product.price * quantity).toFixed(2)}</p>
+                {/* STICKY ACTION BAR */}
+                <div className="absolute bottom-0 left-0 right-0 md:relative bg-white/95 dark:bg-[#0f172a]/95 border-t border-slate-100 dark:border-slate-800 p-4 md:mt-8 md:p-0 space-y-4 z-20">
+                  <div className="flex items-center justify-between">
+                    <span className="text-lg font-black dark:text-white">${(product.price * quantity).toFixed(2)}</span>
+                    <div className="flex items-center bg-slate-100 dark:bg-slate-900 rounded-xl p-1 border border-slate-200 dark:border-slate-700">
+                      <button onClick={() => setQuantity(q => Math.max(1, q - 1))} className="p-2 active:scale-75"><FaMinus size={10} /></button>
+                      <span className="w-8 text-center font-bold dark:text-white">{quantity}</span>
+                      <button onClick={() => setQuantity(q => q + 1)} className="p-2 active:scale-75"><FaPlus size={10} /></button>
                     </div>
                   </div>
 
                   <div className="flex gap-3">
+                    {/* BUTTON FIX: Added flex-shrink-0 and min-width handling */}
                     <button
                       onClick={() => cartHandler(false)}
-                      disabled={status !== "idle"}
-                      className={`flex-1 h-12 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all 
-                        ${status === "success" 
-                          ? "bg-green-500 text-white" 
-                          : "bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:opacity-90"}`}
+                      disabled={loader}
+                      className="flex-1 min-w-0 h-12 md:h-14 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-200 transition-all disabled:opacity-50 px-2"
                     >
-                      {status === "loading" ? <FiLoader className="animate-spin" /> : 
-                       status === "success" ? <FiCheckCircle /> : <FiShoppingCart />}
-                      {status === "success" ? "Done" : "Add"}
+                      <FiShoppingCart className="shrink-0" />
+                      <span className="truncate">{loader ? "Adding..." : "Add to Cart"}</span>
                     </button>
-
                     <button
                       onClick={() => cartHandler(true)}
-                      className="flex-[1.5] h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 active:scale-95 transition-all"
+                      className="flex-[1.5] min-w-0 h-12 md:h-14 bg-blue-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 active:scale-95 transition-all px-2"
                     >
-                      <span>Checkout</span>
-                      <FiArrowRight />
+                      <span className="truncate">Buy Now</span>
+                      <FiArrowRight className="shrink-0" />
                     </button>
                   </div>
                 </div>
               </div>
             </>
           ) : (
-            <div className="w-full p-8"><LOGINMODAL setShowLoginPrompt={setShowLoginPrompt} isNested={true} /></div>
+            <div className="w-full p-8 bg-white dark:bg-slate-900"><LOGINMODAL setShowLoginPrompt={setShowLoginPrompt} isNested={true} /></div>
           )}
         </AnimatePresence>
       </motion.div>
